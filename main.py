@@ -69,16 +69,11 @@ def main():
     uv_tex = renderer.make_tex_2channel_flt32()
     mesh_id_tex = renderer.make_tex_1channel_int32()
     mesh_id_colored_tex = renderer.make_tex_3channel_8bit()
-    # TODO: add a depth texture (by calculating distance from camera)
-    
-    default_depth_tex_desc = rndr.TextureDescription(
-        width=renderer.win_size.x, height=renderer.win_size.y, 
-        internal_format=GL_DEPTH_COMPONENT32, format=GL_DEPTH_COMPONENT, type=GL_FLOAT)
-    default_depth_tex = rndr.Texture(default_depth_tex_desc)
-    
+    # TODO: add a color texture for depth (by calculating distance from camera)
+        
     fb = rndr.Framebuffer(
         color_textures=[scene_tex, world_pos_tex, world_normal_tex, uv_tex, mesh_id_tex, mesh_id_colored_tex], 
-        depth_texture=default_depth_tex
+        depth_texture=renderer.make_default_depth_tex()
     )
     
     # TODO: resizable Framebuffers

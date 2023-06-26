@@ -65,7 +65,7 @@ class Texture:
     def set_data(self, data):
         self.data = data
         self.bind()
-        glTexImage2D(GL_TEXTURE_2D, 0, self.desc.internal_format, self.desc.width, self.desc.height, 0, self.desc.format, self.data)
+        glTexImage2D(GL_TEXTURE_2D, 0, self.desc.internal_format, self.desc.width, self.desc.height, 0, self.desc.format, self.desc.type, self.data)
         self.unbind()
         
     def bind(self):
@@ -74,9 +74,14 @@ class Texture:
     def unbind(self):
         glBindTexture(GL_TEXTURE_2D, 0)
     
-    # TODO: implement
     def resize_if_needed(self, width: int, height: int):
-        pass
+        if (self.desc.width == width and self.desc.height == height):
+            return
+        self.desc.width = width
+        self.desc.height = height
+        self.bind()
+        glTexImage2D(GL_TEXTURE_2D, 0, self.desc.internal_format, self.desc.width, self.desc.height, 0, self.desc.format, self.desc.type, None)
+        self.unbind()        
     
     def create_example_texture():
         texDesc = TextureDescription()
@@ -88,6 +93,8 @@ class Framebuffer:
     def __init__(self, color_textures:[Texture], depth_texture: Texture=None, stencil_texture: Texture=None):
         self._id = glGenFramebuffers(1)
         self.color_textures = color_textures
+        self.depth_texture = depth_texture
+        self.stencil_texture = stencil_texture
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self._id)
         draw_buffers = []
         for n, color_texture in enumerate(color_textures):
@@ -113,6 +120,14 @@ class Framebuffer:
     
     def unbind(self):
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
+    
+    def resize_if_needed(self, width: int, height: int):
+        for tex in self.color_textures:
+            tex.resize_if_needed(width, height)
+        if self.depth_texture:
+            self.depth_texture.resize_if_needed(width, height)
+        if self.stencil_texture:
+            self.stencil_texture.resize_if_needed(width, height)
 
 
 class Shader:
@@ -282,6 +297,9 @@ class Renderer:
     
     def begin_frame(self):
         glfw.poll_events()
+        (w, h) = glfw.get_window_size(self.window)
+        self.win_size.x = w
+        self.win_size.y = h
         self.imgui_impl.process_inputs()
         imgui.new_frame()
         self._has_frame_begun = True

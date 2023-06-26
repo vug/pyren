@@ -76,9 +76,6 @@ def main():
         depth_texture=renderer.make_default_depth_tex()
     )
     
-    # TODO: resizable Framebuffers
-    # TODO: register Framebuffers to renderer for auto-resize
-    
     #globals().update(locals())
     
     assets = Assets(renderer)
@@ -124,7 +121,9 @@ def main():
     
     while renderer.is_running():
         renderer.begin_frame()
-        # glViewport(0, 0, renderer.win_size.x, renderer.win_size.y);
+        fb.resize_if_needed(renderer.win_size.x, renderer.win_size.y)
+        scene.cam.aspect_ratio = renderer.win_size.x / renderer.win_size.y
+        glViewport(0, 0, renderer.win_size.x, renderer.win_size.y)
         
         imgui.begin("Settings", True)
         
@@ -200,7 +199,7 @@ def main():
         
         # Clear editor background
         glClearColor(0.2, 0.3, 0.4, 1.0)
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)        
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         assets.shaders["fullscreen"].bind()
         assets.shaders["fullscreen"].set_uniform_vec3("eyePos", scene.cam.position)
         glDrawArrays(GL_TRIANGLES, 0, 3)

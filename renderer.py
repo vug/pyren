@@ -2,6 +2,7 @@ import glfw
 import glm
 import imgui
 from imgui.integrations.glfw import GlfwRenderer
+from more_itertools import flatten
 import numpy as np
 from OpenGL.GL import GLint, GLenum, GL_FALSE, GL_FLOAT
 # Texture related imports
@@ -76,6 +77,11 @@ class Texture:
     # TODO: implement
     def resize_if_needed(self, width: int, height: int):
         pass
+    
+    def create_example_texture():
+        texDesc = TextureDescription()
+        texData = np.array(list(flatten([[i, j, 128, 255] for i in range(texDesc.height) for j in range(texDesc.width)])))
+        return Texture(texDesc, texData)        
 
 
 class Framebuffer:

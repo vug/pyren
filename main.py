@@ -1,16 +1,23 @@
 """
 Ref:
-- Trying Frame buffer objects in PyOpenGL · GitHub https://gist.github.com/vug/2c7953d5fdf750c727af249ded3e9018
 - GitHub - jcteng/python-opengl-tutorial: Python opengl-tutorial base on PyOpenGL. https://github.com/jcteng/python-opengl-tutorial
 - python - How do I make OpenGL draw do a non-display surface in pygame? - Stack Overflow https://stackoverflow.com/questions/53748691/how-do-i-make-opengl-draw-do-a-non-display-surface-in-pygame
 
 TODO:
+* Add multiple point lights https://learnopengl.com/Advanced-Lighting/Deferred-Shading, https://ogldev.org/www/tutorial36/tutorial36.html
 * BLIT selected texture into default framebuffer, instead of visualizing it in a separate ImGui window
-* A second shader that reads deferred FBO textures and do shading!
+
+TODO LATER:
 * calculate normals if not provided (Ex: bunny.obj)
 * move logic in create_mesh_buffer into Mesh
-* (Maybe later) Read image into texture
-* Textured shader
+* (Maybe later) load image file into texture
+* add post-processing effects https://learnopengl.com/Advanced-OpenGL/Framebuffers
+* Texture viewer/editor: https://docs.gl/gl4/glTexParameter, debug https://registry.khronos.org/OpenGL-Refpages/gl4/html/glGetFramebufferAttachmentParameter.xhtml
+
+REF:
+* pyopengl example: https://gist.github.com/vug/2c7953d5fdf750c727af249ded3e9018
+* https://github.com/vug/graphics-app-boilerplate
+* https://github.com/vug/render-graph-study
 """
 from assets import Assets
 import renderer as rndr
@@ -19,7 +26,6 @@ import utils
 
 import glm
 import imgui
-from more_itertools import flatten
 import numpy as np
 from OpenGL.GL import (
     GL_COLOR_BUFFER_BIT,
@@ -56,11 +62,6 @@ def main():
     
     scene = Scene(renderer)
     scene.clear_color = glm.vec3([0.0, 0.0, 0.4])
-    
-    # TODO: move texture creation example to create_example_texture() static function under Texture class
-    texDesc = rndr.TextureDescription()
-    texData = np.array(list(flatten([[i, j, 128, 255] for i in range(texDesc.height) for j in range(texDesc.width)])))
-    tex = rndr.Texture(texDesc, texData)
     
     # TODO: prepare static factory functions for common TextureDescriptions in renderer. (so that it'll know the window size)
     scene_tex = rndr.Texture(rndr.TextureDescription(width=renderer.win_size.x, height=renderer.win_size.y))

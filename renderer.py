@@ -4,9 +4,9 @@ import imgui
 from imgui.integrations.glfw import GlfwRenderer
 from more_itertools import flatten
 import numpy as np
-from OpenGL.GL import GLint, GLenum, GL_FALSE, GL_FLOAT
+from OpenGL.GL import GLint, GLenum, GL_FALSE, GL_FLOAT, GL_INT
 # Texture related imports
-from OpenGL.GL import GL_RGBA, GL_RGBA8, GL_NEAREST, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_TEXTURE_MAG_FILTER, GL_UNSIGNED_BYTE, glBindTexture, glGenTextures, glTexImage2D, glTexParameteri
+from OpenGL.GL import GL_R32I, GL_RED_INTEGER, GL_RG, GL_RG32F, GL_RGB, GL_RGB32F, GL_RGBA, GL_RGB8, GL_RGBA8, GL_NEAREST, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_TEXTURE_MAG_FILTER, GL_UNSIGNED_BYTE, glBindTexture, glGenTextures, glTexImage2D, glTexParameteri
 # Framebuffer related imports
 from OpenGL.GL import GL_COLOR_ATTACHMENT0, GL_DEPTH_ATTACHMENT, GL_DRAW_FRAMEBUFFER, GL_FRAMEBUFFER, GL_FRAMEBUFFER_COMPLETE, GL_STENCIL_ATTACHMENT, glBindFramebuffer, glCheckFramebufferStatus, glDrawBuffers, glFramebufferTexture2D, glGenFramebuffers
 # Shader related imports
@@ -318,7 +318,46 @@ class Renderer:
         
         assert(len(np_vertices) / vertex_size % 3 == 0)
         mesh = Mesh(vao, len(np_vertices) // vertex_size)
-        return mesh     
+        return mesh
+    
+    def make_default_color_tex(self):
+        return self.make_tex_three_channel_8bit()
+    
+    def make_tex_3channel_8bit(self):
+        desc = TextureDescription(
+            width=self.win_size.x, height=self.win_size.y,
+            internal_format=GL_RGB8,
+            format=GL_RGB,       
+            type=GL_UNSIGNED_BYTE,
+        )
+        return Texture(desc)
+    
+    def make_tex_3channel_flt32(self):    
+        desc = TextureDescription(
+            width=self.win_size.x, height=self.win_size.y,
+            internal_format=GL_RGB32F,
+            format=GL_RGB,       
+            type=GL_FLOAT,
+        )
+        return Texture(desc)    
+    
+    def make_tex_2channel_flt32(self):
+        desc = TextureDescription(
+            width=self.win_size.x, height=self.win_size.y,
+            internal_format=GL_RG32F,
+            format=GL_RG,       
+            type=GL_FLOAT,
+        )
+        return Texture(desc)
+
+    def make_tex_1channel_int32(self):
+        desc = TextureDescription(
+            width=self.win_size.x, height=self.win_size.y,
+            internal_format=GL_R32I,
+            format=GL_RED_INTEGER,       
+            type=GL_INT,
+        )
+        return Texture(desc)
 
 def pointer_offset(n=0):
     return ctypes.c_void_p(4 * n)

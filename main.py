@@ -63,37 +63,12 @@ def main():
     scene = Scene(renderer)
     scene.clear_color = glm.vec3([0.0, 0.0, 0.4])
     
-    # TODO: prepare static factory functions for common TextureDescriptions in renderer. (so that it'll know the window size)
-    scene_tex = rndr.Texture(rndr.TextureDescription(width=renderer.win_size.x, height=renderer.win_size.y))
-    rgb_tex_desc = rndr.TextureDescription(
-        width=renderer.win_size.x, height=renderer.win_size.y,
-        internal_format=GL_RGB8,
-        format=GL_RGB,       
-        type=GL_UNSIGNED_BYTE,
-    )
-    two_comp_float_tex_desc = rndr.TextureDescription(
-        width=renderer.win_size.x, height=renderer.win_size.y,
-        internal_format=GL_RG32F,
-        format=GL_RG,       
-        type=GL_FLOAT,
-    )    
-    three_comp_float_tex_desc = rndr.TextureDescription(
-        width=renderer.win_size.x, height=renderer.win_size.y,
-        internal_format=GL_RGB32F,
-        format=GL_RGB,       
-        type=GL_FLOAT,
-    )
-    int_tex_desc = rndr.TextureDescription(
-        width=renderer.win_size.x, height=renderer.win_size.y,
-        internal_format=GL_R32I,
-        format=GL_RED_INTEGER,       
-        type=GL_INT,
-    )
-    world_pos_tex = rndr.Texture(three_comp_float_tex_desc)
-    world_normal_tex = rndr.Texture(three_comp_float_tex_desc)
-    uv_tex = rndr.Texture(two_comp_float_tex_desc)
-    mesh_id_tex = rndr.Texture(int_tex_desc)
-    mesh_id_colored_tex = rndr.Texture(rgb_tex_desc)
+    scene_tex = renderer.make_tex_3channel_8bit()
+    world_pos_tex = renderer.make_tex_3channel_flt32()
+    world_normal_tex = renderer.make_tex_3channel_flt32()
+    uv_tex = renderer.make_tex_2channel_flt32()
+    mesh_id_tex = renderer.make_tex_1channel_int32()
+    mesh_id_colored_tex = renderer.make_tex_3channel_8bit()
     # TODO: add a depth texture (by calculating distance from camera)
     
     default_depth_tex_desc = rndr.TextureDescription(

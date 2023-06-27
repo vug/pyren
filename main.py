@@ -20,29 +20,17 @@ REF:
 * https://github.com/vug/render-graph-study
 """
 from assets import Assets
+from framebuffer import Framebuffer
 import renderer as rndr
 from scene import Scene, Object
 import utils
 
 import glm
 import imgui
-import numpy as np
 from OpenGL.GL import (
     GL_COLOR_BUFFER_BIT,
-    GL_DEPTH_COMPONENT32,
-    GL_DEPTH_COMPONENT,
     GL_DEPTH_BUFFER_BIT,
-    GL_FLOAT,
-    GL_INT,
-    GL_RED_INTEGER,
-    GL_RG,
-    GL_RGB,
-    GL_RGB8,
-    GL_RG32F,
-    GL_R32I,
-    GL_RGB32F,
     GL_TRIANGLES,
-    GL_UNSIGNED_BYTE,
     glBindVertexArray,
     glClear,
     glClearColor,
@@ -71,7 +59,7 @@ def main():
     mesh_id_colored_tex = renderer.make_tex_3channel_8bit()
     # TODO: add a color texture for depth (by calculating distance from camera)
         
-    fb = rndr.Framebuffer(
+    fb = Framebuffer(
         color_textures=[scene_tex, world_pos_tex, world_normal_tex, uv_tex, mesh_id_tex, mesh_id_colored_tex], 
         depth_texture=renderer.make_default_depth_tex()
     )

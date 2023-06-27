@@ -9,7 +9,7 @@ from OpenGL.GL import GL_FLOAT, GL_INT
 # Texture related imports
 from OpenGL.GL import GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT32
 from OpenGL.GL import GL_RGB, GL_RGB8, GL_UNSIGNED_BYTE, GL_RGB32F
-from OpenGL.GL import GL_RG, GL_RG32F
+from OpenGL.GL import GL_RED, GL_R32F, GL_RG, GL_RG32F
 from OpenGL.GL import GL_R32I, GL_RED_INTEGER
 # OpenGL queries realted imports
 from OpenGL.GL import GL_MAX_COLOR_ATTACHMENTS, GL_SHADING_LANGUAGE_VERSION, GL_RENDERER, GL_VERSION, glGetIntegerv, glGetString
@@ -102,6 +102,15 @@ class Renderer:
             type=GL_FLOAT,
         )
         return Texture(desc)
+    
+    def make_tex_1channel_flt32(self):
+        desc = TextureDescription(
+            width=self.win_size.x, height=self.win_size.y,
+            internal_format=GL_R32F,
+            format=GL_RED,
+            type=GL_FLOAT,
+        )
+        return Texture(desc)        
 
     def make_tex_1channel_int32(self):
         desc = TextureDescription(

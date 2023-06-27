@@ -58,10 +58,9 @@ def main():
     uv_tex = renderer.make_tex_2channel_flt32()
     mesh_id_tex = renderer.make_tex_1channel_int32()
     mesh_id_colored_tex = renderer.make_tex_3channel_8bit()
-    # TODO: add a color texture for depth (by calculating distance from camera)
-        
+    my_depth_tex = renderer.make_tex_1channel_flt32()  # actually a color attachment
     fb = Framebuffer(
-        color_textures=[scene_tex, world_pos_tex, world_normal_tex, uv_tex, mesh_id_tex, mesh_id_colored_tex], 
+        color_textures=[scene_tex, world_pos_tex, world_normal_tex, uv_tex, my_depth_tex, mesh_id_tex, mesh_id_colored_tex], 
         depth_texture=renderer.make_default_depth_tex()
     )
     
@@ -103,11 +102,11 @@ def main():
     cam_r = 3
     cam_theta = math.pi / 3
     cam_phi = math.pi / 8
-    selected_tex_ix = 0
 
-    obj_names = list(objects.keys())
     obj_combo = ui.ComboBox("Select Object", list(objects.values()), list(objects.keys()), 0)
-    tex_combo = ui.ComboBox("Select Texture", fb.color_textures, ["scene", "world_pos", "world_normal", "uv", "mesh_id", "mesh_id_colored"])
+    tex_names = ["scene", "world_pos", "world_normal", "uv", "depth", "mesh_id", "mesh_id_colored"]
+    assert(len(tex_names) == len(fb.color_textures))
+    tex_combo = ui.ComboBox("Select Texture", fb.color_textures, tex_names)
     
     while renderer.is_running():
         renderer.begin_frame()

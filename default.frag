@@ -19,8 +19,9 @@ layout (location = 0) out vec4 outColor;
 layout (location = 1) out vec3 outWorldPos;
 layout (location = 2) out vec3 outWorldNormal;
 layout (location = 3) out vec2 outUV;
-layout (location = 4) out int outMeshId;
-layout (location = 5) out vec3 outMeshIdColored;
+layout (location = 4) out float outDepth;
+layout (location = 5) out int outMeshId;
+layout (location = 6) out vec3 outMeshIdColored;
 
 vec3 colorFromIndex(uint index) {
   uint a = (index & (1 << 0)) != 0 ? 1 : 0;
@@ -53,6 +54,7 @@ void main () {
     outWorldPos = v.worldPosition;
     outWorldNormal = v.worldNormal;
     outUV = v.texCoord;
+    outDepth = log(length(v.worldPosition - eyePos));  // TODO: add depthViz, and rename meshIdColored to meshIdViz
     outMeshId = meshId;
     outMeshIdColored = colorFromIndex(meshId);
 }

@@ -1,4 +1,4 @@
-import renderer
+from mesh import Mesh
 from shader import Shader
 
 import numpy as np
@@ -53,7 +53,7 @@ class Assets:
                 
             processed_vertices = list(flatten(processed_vertices))
             np_array = np.array(processed_vertices, dtype=np.float32)
-            mesh = self._renderer.create_mesh_buffer(np_array)
+            mesh = Mesh(np_array)
             self.meshes[asset_name] = mesh
     
     def load_shader(self, asset_name: str, vert_file: str, frag_file: str):

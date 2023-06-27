@@ -5,7 +5,7 @@ import glm
 import imgui
 from imgui.integrations.glfw import GlfwRenderer
 import numpy as np
-from OpenGL.GL import GL_FALSE, GL_FLOAT, GL_INT
+from OpenGL.GL import GL_FLOAT, GL_INT
 # Texture related imports
 from OpenGL.GL import GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT32
 from OpenGL.GL import GL_RGB, GL_RGB8, GL_UNSIGNED_BYTE, GL_RGB32F
@@ -17,21 +17,10 @@ from OpenGL.GL import GL_MAX_COLOR_ATTACHMENTS, GL_SHADING_LANGUAGE_VERSION, GL_
 from OpenGL.GL import GL_CULL_FACE, GL_DEPTH_TEST, glEnable
 from OpenGL.GL import GL_BACK, glCullFace
 from OpenGL.GL import GL_LESS, glDepthFunc
-# Geometry/Mesh related imports
-from OpenGL.GL import GL_ARRAY_BUFFER, GL_STATIC_DRAW, glBindBuffer, glBindVertexArray, glBufferData, glEnableVertexAttribArray, glGenBuffers, glGenVertexArrays, glVertexAttribPointer
-
-import ctypes
-
 
 # TODO: renderer.make_default_framebuffer(colors=None, has_depth: bool, has_stencil: bool):
 # creates textures same size as window
 # if colors is None, one color attachment of screensize with RGBA8
-
-
-class Mesh:
-    def __init__(self, vao, vertex_count):
-        self.vao = vao
-        self.vertex_count = vertex_count
 
 
 class Renderer:
@@ -80,33 +69,6 @@ class Renderer:
         imgui.end_frame()
         glfw.swap_buffers(self.window)
         self._has_frame_begun = False
-
-
-    # TODO: move into Mesh class constructor
-    def create_mesh_buffer(self, np_vertices):
-        vao = glGenVertexArrays(1)
-        glBindVertexArray(vao)
-        vbo = glGenBuffers(1)
-        print(f"vao {vao}, vbo {vbo}")
-        glBindBuffer(GL_ARRAY_BUFFER, vbo)
-        glBufferData(GL_ARRAY_BUFFER, np_vertices, GL_STATIC_DRAW)
-        offset = 0
-        # pos 3, tex 2, nrm 3, col 4
-        sizes = [3, 2, 3, 4]
-        vertex_size = sum(sizes)
-        for ix, size in enumerate(sizes):
-            stride = vertex_size * np.dtype('float32').itemsize
-            offset_ptr = ctypes.c_void_p(offset * np.dtype('float32').itemsize)
-            glVertexAttribPointer(ix, size, GL_FLOAT, GL_FALSE, stride, offset_ptr)
-            glEnableVertexAttribArray(ix)
-            # print(f"vertex attribute[{ix}]: {attrib}, size: {size}, offset: {offset}, stride: {stride}")
-            offset += size
-        glBindBuffer(GL_ARRAY_BUFFER, 0)
-        glBindVertexArray(0)
-
-        assert(len(np_vertices) / vertex_size % 3 == 0)
-        mesh = Mesh(vao, len(np_vertices) // vertex_size)
-        return mesh
 
     def make_default_color_tex(self):
         return self.make_tex_three_channel_8bit()
@@ -158,6 +120,3 @@ class Renderer:
             type=GL_FLOAT
         )
         return Texture(desc)
-
-def pointer_offset(n=0):
-    return ctypes.c_void_p(4 * n)

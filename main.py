@@ -121,6 +121,9 @@ def main():
                 shader.reload()
         imgui.separator()
         
+        _, _, viz_tex = tex_combo.draw()
+        imgui.separator()
+        
         if (len(objects) > 0):
             _, obj_name, obj = obj_combo.draw()
             imgui.text(f"selected: {obj_name}")
@@ -161,9 +164,18 @@ def main():
         fb.unbind()
         
         imgui.push_style_var(imgui.STYLE_WINDOW_PADDING, imgui.Vec2(0, 0))
-        imgui.begin("Scene", True)
-        _, _, viz_tex = tex_combo.draw()
-        imgui.image(viz_tex.get_id(), viz_tex.desc.width, viz_tex.desc.height, uv0=(1, 1), uv1=(0, 0), border_color=(1,1,0,1))
+        imgui.begin("Texture Viewer", True)
+        win_sz = imgui.get_window_size()
+        win_ar = win_sz.x / win_sz.y
+        tex_ar = viz_tex.desc.width / viz_tex.desc.height
+        w, h = 1, 1
+        if tex_ar >= win_ar:
+            w = win_sz.x
+            h = w / tex_ar
+        else:
+            h = win_sz.y
+            w = h * tex_ar
+        imgui.image(viz_tex.get_id(), w, h, uv0=(0, 1), uv1=(1, 0), border_color=(1,1,0,1))
         imgui.end()
         imgui.pop_style_var(1)
         

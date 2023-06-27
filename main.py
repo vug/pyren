@@ -23,6 +23,7 @@ from assets import Assets
 from framebuffer import Framebuffer
 import renderer as rndr
 from scene import Scene, Object
+import ui
 import utils
 
 import glm
@@ -72,7 +73,6 @@ def main():
     assets.load_obj("cubeTri", "models/cubeTri.obj")
     assets.load_obj("quad", "models/quad.obj")
     assets.load_obj("sphere", "models/sphere.obj")
-    # assets.load_obj("bunny", "models/bunny.obj")
     assets.load_shader("default", "default.vert", "default.frag")
     assets.load_shader("fullscreen", "fullscreen_quad.vert", "fullscreen_quad.frag")
     
@@ -93,7 +93,6 @@ def main():
         shader=assets.shaders["default"]
     )    
     # TODO: UI that lists loaded assets. For mesh show name, vertex and triangle count
-    # TODO: bring a quad mesh asset
     # TODO: add 1 ground object with a quad
     # TODO: add 1 rectangular area light
     # TODO: UI for area light
@@ -104,8 +103,11 @@ def main():
     cam_r = 3
     cam_theta = math.pi / 3
     cam_phi = math.pi / 8
-    selected_ix = 0
     selected_tex_ix = 0
+
+    obj_names = list(objects.keys())
+    obj_combo = ui.ComboBox("Select Object", list(objects.values()), list(objects.keys()), 0)
+    tex_combo = ui.ComboBox("Select Texture", fb.color_textures, ["scene", "world_pos", "world_normal", "uv", "mesh_id", "mesh_id_colored"])
     
     while renderer.is_running():
         renderer.begin_frame()
@@ -121,17 +123,9 @@ def main():
         imgui.separator()
         
         if (len(objects) > 0):
-            obj_names = list(objects.keys())
-            _, selected_ix = imgui.combo("Select Object", selected_ix, obj_names)
-            obj = objects[obj_names[selected_ix]]
-            imgui.text(f"selected: {obj_names[selected_ix]}")
-            # TODO: move transfrom UI to utils
-            _, translation = imgui.slider_float3("translation", *obj.transform.translation, min_value=-10.0, max_value=10.0, format="%.3f")
-            obj.transform.translation = glm.vec3(translation)
-            _, rotation = imgui.slider_float3("rotation (YXZ)", *obj.transform.rotation_yxz, min_value=-10.0, max_value=10.0, format="%.3f")
-            obj.transform.rotation_yxz = glm.vec3(rotation)
-            _, scale = imgui.slider_float3("scale", *obj.transform.scale, min_value=0.0, max_value=10.0, format="%.3f")
-            obj.transform.scale = glm.vec3(scale)        
+            _, obj_name, obj = obj_combo.draw()
+            imgui.text(f"selected: {obj_name}")
+            ui.transform_widget(obj)    
             imgui.separator()
         
         # TODO: use color-picker for clear color UI
@@ -153,7 +147,7 @@ def main():
         glClearColor(scene.clear_color.r, scene.clear_color.g, scene.clear_color.b, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         
-        for obj_name, obj in objects.items():
+        for _, obj in objects.items():
             # TODO maybe: a scene.render_object() method (might take uniforms)
             obj.shader.bind()
             glBindVertexArray(obj.mesh.vao)
@@ -169,9 +163,7 @@ def main():
         
         imgui.push_style_var(imgui.STYLE_WINDOW_PADDING, imgui.Vec2(0, 0))
         imgui.begin("Scene", True)
-        viz_tex_names = ["scene", "world_pos", "world_normal", "uv", "mesh_id", "mesh_id_colored"]
-        _, selected_tex_ix = imgui.combo("Select Texture", selected_tex_ix, viz_tex_names)
-        viz_tex = fb.color_textures[selected_tex_ix]
+        _, _, viz_tex = tex_combo.draw()
         imgui.image(viz_tex.get_id(), viz_tex.desc.width, viz_tex.desc.height, uv0=(1, 1), uv1=(0, 0), border_color=(1,1,0,1))
         imgui.end()
         imgui.pop_style_var(1)

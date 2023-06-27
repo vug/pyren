@@ -1,4 +1,4 @@
-from renderer import Camera
+from camera import Camera
 
 import glm
 

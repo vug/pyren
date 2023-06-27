@@ -1,4 +1,5 @@
 import renderer
+from shader import Shader
 
 import numpy as np
 import pywavefront
@@ -56,5 +57,5 @@ class Assets:
             self.meshes[asset_name] = mesh
     
     def load_shader(self, asset_name: str, vert_file: str, frag_file: str):
-        shader = renderer.Shader(vert_file, frag_file)
+        shader = Shader(vert_file, frag_file)
         self.shaders[asset_name] = shader

@@ -11,8 +11,6 @@ from OpenGL.GL import GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT32
 from OpenGL.GL import GL_RGB, GL_RGB8, GL_UNSIGNED_BYTE, GL_RGB32F
 from OpenGL.GL import GL_RG, GL_RG32F
 from OpenGL.GL import GL_R32I, GL_RED_INTEGER
-# Shader related imports
-from OpenGL.GL import GL_COMPILE_STATUS, GL_FRAGMENT_SHADER, GL_LINK_STATUS, GL_VERTEX_SHADER, glAttachShader, glCompileShader, glCreateProgram, glCreateShader, glDeleteShader, glDetachShader, glGetProgramiv, glGetShaderiv, glGetShaderInfoLog, glGetUniformLocation, glLinkProgram, glShaderSource, glUniform1i, glUniform3fv, glUniformMatrix4fv, glUseProgram
 # OpenGL queries realted imports
 from OpenGL.GL import GL_MAX_COLOR_ATTACHMENTS, GL_SHADING_LANGUAGE_VERSION, GL_RENDERER, GL_VERSION, glGetIntegerv, glGetString
 # Graphics pipeline settings related imports
@@ -32,143 +30,9 @@ import ctypes
 
 class Mesh:
     def __init__(self, vao, vertex_count):
-        self.vao = vao;
+        self.vao = vao
         self.vertex_count = vertex_count
 
-
-class Shader:
-    def __init__(self, vertex_file, fragment_file):
-        self.vertex_file = vertex_file
-        self.fragment_file = fragment_file
-
-        self._id = glCreateProgram()
-        self._vert_id = -1
-        self._frag_id = -1
-        self._vert_src = ""
-        self._frag_src = ""
-
-        self.__load()
-        self.__compile()
-
-    def get_id(self):
-        return self._id
-
-    def get_vert_id(self):
-        return self._vert_id
-
-    def get_frag_id(self):
-        return self._frag_id
-
-    def get_vertex_src(self):
-        return self._vertex_src
-
-    def get_frag_src(self):
-        return self._frag_src
-
-    def reload(self):
-        self.__load()
-        self.__compile()
-
-    def is_valid(self):
-        return glGetProgramiv(self._id, GL_LINK_STATUS)
-
-    def bind(self):
-        assert(self.is_valid())
-        glUseProgram(self._id)
-
-    def unbind(self):
-        glUseProgram(0)
-
-    def set_uniform_int1(self, name, val):
-      loc = glGetUniformLocation(self._id, name)
-      glUniform1i(loc, val)
-
-    def set_uniform_vec3(self, name, val):
-        loc = glGetUniformLocation(self._id, name)
-        glUniform3fv(loc, 1, glm.value_ptr(val))
-
-    def set_uniform_mat4(self, name, val):
-        loc = glGetUniformLocation(self._id, name)
-        glUniformMatrix4fv(loc, 1, GL_FALSE, glm.value_ptr(val))
-
-
-    def __load(self):
-        with open(self.vertex_file, 'r') as file:
-            self._vert_src = file.read()
-        with open(self.fragment_file, 'r') as file:
-            self._frag_src = file.read()
-
-    def __compile(self):
-        vs = glCreateShader(GL_VERTEX_SHADER)
-        glShaderSource(vs, [self._vert_src], None)  # TODO: try non-array
-        glCompileShader(vs)
-        status = glGetShaderiv(vs, GL_COMPILE_STATUS)
-        if status != 1:
-            print('VERTEX SHADER ERROR')
-            print(glGetShaderInfoLog(vs).decode())
-            glDeleteShader(vs)
-            return -1
-
-        fs = glCreateShader(GL_FRAGMENT_SHADER)
-        glShaderSource(fs, [self._frag_src], None)
-        glCompileShader(fs)
-        status = glGetShaderiv(fs, GL_COMPILE_STATUS)
-        if status != 1:
-            print('FRAGMENT SHADER ERROR')
-            print(glGetShaderInfoLog(fs).decode())
-            glDeleteShader(vs)
-            glDeleteShader(fs)
-            return -1
-
-        if self.is_valid():
-            glDetachShader(self.get_id(), self.get_vert_id());
-            glDetachShader(self.get_id(), self.get_frag_id());
-
-        glAttachShader(self.get_id(), vs)
-        glAttachShader(self.get_id(), fs)
-        glLinkProgram(self.get_id())
-        status = glGetProgramiv(self.get_id(), GL_LINK_STATUS)
-        if status != 1:
-            print('status', status)
-            print('SHADER PROGRAM', glGetShaderInfoLog(self._id))
-            glDeleteShader(vs)
-            glDeleteShader(fs)
-            return -1
-
-        self._vert_id = vs
-        self._frag_id = fs
-
-        # glDeleteShader(vs)
-        # glDeleteShader(fs)
-
-        return self.get_id()
-
-
-class Camera:
-    up = glm.vec3(0, 1, 0)
-
-    def __init__(self, position, target, fov, aspect_ratio):
-        self.position = position
-        self.target = target
-        self.fov = fov
-        self.aspect_ratio = aspect_ratio
-        self.near_clip = 0.01
-        self.far_clip = 100.0
-
-    # def get_direction(self):
-    #     # cos/sin x/y/z order taken from: https://learnopengl.com/code_viewer_gh.php?code=includes/learnopengl/camera.h
-    #     pitch, yaw, roll = self.orientation
-    #     return glm.vec3(
-    #         math.cos(yaw) * math.cos(pitch),
-    #         math.sin(pitch),
-    #         math.sin(yaw) * math.cos(pitch)
-    #     )
-
-    def get_view_from_world(self):
-        return glm.lookAt(self.position, self.target, self.up)
-
-    def get_projection_from_view(self):
-        return glm.perspective(glm.radians(self.fov), self.aspect_ratio, self.near_clip, self.far_clip)
 
 class Renderer:
     def init(self):

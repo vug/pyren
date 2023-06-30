@@ -157,22 +157,7 @@ def main():
         if (showAssetsWindow):
             _, showAssetsWindow = ui.draw_assets_window(assets)
         if (showTextureViewerWindow):
-            _, showTextureViewerWindow = imgui.begin("Texture Viewer", True, imgui.WINDOW_NO_SCROLLBAR)
-            _, _, viz_tex = tex_combo.draw()
-            imgui.separator()             
-            available_sz = imgui.get_content_region_available()
-            imgui.core.get_content_region_available_width()
-            win_ar = available_sz.x / available_sz.y
-            tex_ar = viz_tex.desc.width / viz_tex.desc.height
-            w, h = 1, 1
-            if tex_ar >= win_ar:
-                w = available_sz.x
-                h = w / tex_ar
-            else:
-                h = available_sz.y
-                w = h * tex_ar
-            imgui.image(viz_tex.get_id(), w, h, uv0=(0, 1), uv1=(1, 0), border_color=(1,1,0,1))
-            imgui.end()
+            _, showTextureViewerWindow = ui.draw_texture_viewer_window(tex_combo)
         
         glActiveTexture(GL_TEXTURE0)
         scene_tex.bind()

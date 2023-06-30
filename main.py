@@ -79,13 +79,7 @@ def main():
         mesh=assets.meshes["sphere"], 
         transform=utils.Transform(translation=glm.vec3(0.5, 0.5, -0.5), rotation_yxz=glm.vec3(0, 0, 0), scale=glm.vec3(.1, .1, .1)),
         shader=assets.shaders["default"]
-    )    
-    # TODO: UI that lists loaded assets. For mesh show name, vertex and triangle count
-    # TODO: add 1 ground object with a quad
-    # TODO: add 1 rectangular area light
-    # TODO: UI for area light
-    # TODO: visualize area light with a quad
-    # TODO: render area light with 4 point lights at corners
+    )
     
     # TODO: move camera stuff to utils > orbit camera
     cam_r = 3
@@ -102,10 +96,12 @@ def main():
         fb.resize_if_needed(renderer.win_size.x, renderer.win_size.y)
         scene.cam.aspect_ratio = renderer.win_size.x / renderer.win_size.y
         glViewport(0, 0, renderer.win_size.x, renderer.win_size.y)
+
+        ui.draw_assets_window(assets)
         
         imgui.begin("Settings", True)
         
-        if imgui.button("reload shader"):
+        if imgui.button("reload shaders"):
             for shader in assets.shaders.values():
                 shader.reload()
         imgui.separator()

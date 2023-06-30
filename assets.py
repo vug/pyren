@@ -7,8 +7,8 @@ from more_itertools import chunked, flatten
 
 class Assets:
     def __init__(self, renderer):
-        self.meshes = {}
-        self.shaders = {}
+        self.meshes: dict[str, Mesh] = {}
+        self.shaders: dict[str, Shader] = {}
         self._renderer = renderer
     
     def load_obj(self, asset_name: str, filename: str):

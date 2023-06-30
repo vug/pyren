@@ -1,18 +1,7 @@
 """
-Ref:
-- GitHub - jcteng/python-opengl-tutorial: Python opengl-tutorial base on PyOpenGL. https://github.com/jcteng/python-opengl-tutorial
-- python - How do I make OpenGL draw do a non-display surface in pygame? - Stack Overflow https://stackoverflow.com/questions/53748691/how-do-i-make-opengl-draw-do-a-non-display-surface-in-pygame
-
 TODO:
 * Add multiple point lights https://learnopengl.com/Advanced-Lighting/Deferred-Shading, https://ogldev.org/www/tutorial36/tutorial36.html
 * BLIT selected texture into default framebuffer, instead of visualizing it in a separate ImGui window
-
-TODO LATER:
-* calculate normals if not provided (Ex: bunny.obj)
-* move logic in create_mesh_buffer into Mesh
-* (Maybe later) load image file into texture
-* add post-processing effects https://learnopengl.com/Advanced-OpenGL/Framebuffers
-* Texture viewer/editor: https://docs.gl/gl4/glTexParameter, debug https://registry.khronos.org/OpenGL-Refpages/gl4/html/glGetFramebufferAttachmentParameter.xhtml
 
 REF:
 * pyopengl example: https://gist.github.com/vug/2c7953d5fdf750c727af249ded3e9018
@@ -47,7 +36,7 @@ import traceback
 renderer = rndr.Renderer()
 
 def main():   
-    renderer.init()
+    renderer.init(1024, 768)
     
     scene = Scene(renderer)
     scene.clear_color = glm.vec3([0.0, 0.0, 0.4])
@@ -120,10 +109,7 @@ def main():
             for shader in assets.shaders.values():
                 shader.reload()
         imgui.separator()
-        
-        _, _, viz_tex = tex_combo.draw()
-        imgui.separator()
-        
+                
         if (len(objects) > 0):
             _, obj_name, obj = obj_combo.draw()
             imgui.text(f"selected: {obj_name}")
@@ -163,21 +149,22 @@ def main():
             obj.shader.unbind()
         fb.unbind()
         
-        imgui.push_style_var(imgui.STYLE_WINDOW_PADDING, imgui.Vec2(0, 0))
-        imgui.begin("Texture Viewer", True)
-        win_sz = imgui.get_window_size()
-        win_ar = win_sz.x / win_sz.y
+        imgui.begin("Texture Viewer", True, imgui.WINDOW_NO_SCROLLBAR)
+        _, _, viz_tex = tex_combo.draw()
+        imgui.separator()             
+        available_sz = imgui.get_content_region_available()
+        imgui.core.get_content_region_available_width()
+        win_ar = available_sz.x / available_sz.y
         tex_ar = viz_tex.desc.width / viz_tex.desc.height
         w, h = 1, 1
         if tex_ar >= win_ar:
-            w = win_sz.x
+            w = available_sz.x
             h = w / tex_ar
         else:
-            h = win_sz.y
+            h = available_sz.y
             w = h * tex_ar
         imgui.image(viz_tex.get_id(), w, h, uv0=(0, 1), uv1=(1, 0), border_color=(1,1,0,1))
         imgui.end()
-        imgui.pop_style_var(1)
         
         glActiveTexture(GL_TEXTURE0)
         scene_tex.bind()

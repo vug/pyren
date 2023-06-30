@@ -24,10 +24,10 @@ from OpenGL.GL import GL_LESS, glDepthFunc
 
 
 class Renderer:
-    def init(self):
+    def init(self, width=800, height=600):
         self._has_frame_begun = False
         glfw.init()  # without hints chooses v4.6 anyway
-        self.win_size = glm.ivec2(800, 600)
+        self.win_size = glm.ivec2(width, 600)
         self.window = glfw.create_window(self.win_size.x, self.win_size.y, "Hello World", None, None)
         # initialize openGL context before calling any gl functions such as `glGenVertexArrays`
         # otherwise it's expecting old API, or cumbersome workarounds such as https://github.com/tartley/gltutpy/blob/master/t01.hello-triangle/glwrap.py

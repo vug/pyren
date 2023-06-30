@@ -1,7 +1,10 @@
 from scene import Object
+import utils
 
 import imgui
 import glm
+
+import math
 
 class ComboBox:
     def __init__(self, label: str, seq, names, initial_ix=0):
@@ -24,6 +27,32 @@ def transform_widget(obj: Object):
     obj.transform.rotation_yxz = glm.vec3(rotation)
     _, scale = imgui.slider_float3("scale", *obj.transform.scale, min_value=0.0, max_value=10.0, format="%.3f")
     obj.transform.scale = glm.vec3(scale)
+
+cam_r = 3
+cam_theta = math.pi / 3
+cam_phi = math.pi / 8
+def draw_inspector_window(scene, obj_combo):
+    global cam_r, cam_theta, cam_phi
+    has_clicked, is_open = imgui.begin("Inspector", True)            
+    if (len(scene.objects) > 0):
+        _, obj_name, obj = obj_combo.draw()
+        imgui.text(f"selected: {obj_name}")
+        transform_widget(obj)    
+        imgui.separator()   
+    
+    # TODO: use color-picker for clear color UI
+    # TODO: move clear color UI to utils
+    _, clear_color = imgui.slider_float3("Clear Color", *scene.clear_color, min_value=0.0, max_value=1.0, format="%.3f")
+    scene.clear_color = glm.vec3(clear_color)
+    imgui.separator()
+    
+    # TODO: move orbit camera UI to utils
+    _, cam_r = imgui.slider_float("cam pos r", cam_r, 0.01, 10, "%.3f")
+    _, cam_theta = imgui.slider_float("cam pos theta", cam_theta, 0.0, math.pi, "%.3f")
+    _, cam_phi = imgui.slider_float("cam pos phi", cam_phi, 0.01, 2.0 * math.pi, "%.3f")
+    scene.cam.position = utils.spherical_to_cartesian(glm.vec3(cam_r, cam_theta, cam_phi))
+    imgui.end()
+    return has_clicked, is_open
 
 def draw_assets_window(assets):
     has_clicked, is_open = imgui.begin("Assets", True)

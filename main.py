@@ -64,29 +64,23 @@ def main():
     assets.load_shader("default", "default.vert", "default.frag")
     assets.load_shader("fullscreen", "fullscreen_quad.vert", "fullscreen_quad.frag")
     
-    objects = {}
-    objects["suzanne"] = Object(
+    scene.objects["suzanne"] = Object(
         mesh=assets.meshes["monkey"], 
         transform=utils.Transform(translation=glm.vec3(0.5, 0.5, 0.5), rotation_yxz=glm.vec3(0, 0, 0), scale=glm.vec3(.3, .3, .3)),
         shader=assets.shaders["default"]
     )
-    objects["space_ship"] = Object(
+    scene.objects["space_ship"] = Object(
         mesh=assets.meshes["ship"], 
         transform=utils.Transform(translation=glm.vec3(-0.5, -0.5, -0.5), rotation_yxz=glm.vec3(0, 0, 0), scale=glm.vec3(.1, .1, .1)),
         shader=assets.shaders["default"]
     )
-    objects["sphere"] = Object(
+    scene.objects["sphere"] = Object(
         mesh=assets.meshes["sphere"], 
         transform=utils.Transform(translation=glm.vec3(0.5, 0.5, -0.5), rotation_yxz=glm.vec3(0, 0, 0), scale=glm.vec3(.1, .1, .1)),
         shader=assets.shaders["default"]
     )
     
-    # TODO: move camera stuff to utils > orbit camera
-    cam_r = 3
-    cam_theta = math.pi / 3
-    cam_phi = math.pi / 8
-
-    obj_combo = ui.ComboBox("Select Object", list(objects.values()), list(objects.keys()), 0)
+    obj_combo = ui.ComboBox("Select Object", list(scene.objects.values()), list(scene.objects.keys()), 0)
     tex_names = ["scene", "world_pos", "world_normal", "uv", "depth", "mesh_id", "mesh_id_colored"]
     assert(len(tex_names) == len(fb.color_textures))
     tex_combo = ui.ComboBox("Select Texture", fb.color_textures, tex_names)
@@ -107,40 +101,24 @@ def main():
                 _, showTextureViewerWindow = imgui.core.menu_item("Texture Viewer", None, showTextureViewerWindow)
                 _, showInspectorWindow = imgui.core.menu_item("Inspector", None, showInspectorWindow)
                 imgui.end_menu()
-            imgui.end_main_menu_bar()
+
+            if imgui.begin_menu('Actions', True).opened:
+                if imgui.button("reload shaders"):
+                    for shader in assets.shaders.values():
+                        shader.reload()
+                imgui.end_menu()
+
+            imgui.end_main_menu_bar()   
        
         if showInspectorWindow:
-            _, showInspectorWindow = imgui.begin("Inspector", True)
-            if imgui.button("reload shaders"):
-                for shader in assets.shaders.values():
-                    shader.reload()
-            imgui.separator()
-                    
-            if (len(objects) > 0):
-                _, obj_name, obj = obj_combo.draw()
-                imgui.text(f"selected: {obj_name}")
-                ui.transform_widget(obj)    
-                imgui.separator()   
-            
-            # TODO: use color-picker for clear color UI
-            # TODO: move clear color UI to utils
-            _, clear_color = imgui.slider_float3("Clear Color", *scene.clear_color, min_value=0.0, max_value=1.0, format="%.3f")
-            scene.clear_color = glm.vec3(clear_color)
-            imgui.separator()
-            
-            # TODO: move orbit camera UI to utils
-            _, cam_r = imgui.slider_float("cam pos r", cam_r, 0.01, 10, "%.3f")
-            _, cam_theta = imgui.slider_float("cam pos theta", cam_theta, 0.0, math.pi, "%.3f")
-            _, cam_phi = imgui.slider_float("cam pos phi", cam_phi, 0.01, 2.0 * math.pi, "%.3f")
-            scene.cam.position = utils.spherical_to_cartesian(glm.vec3(cam_r, cam_theta, cam_phi))
-            imgui.end()
+            _, showInspectorWindow = ui.draw_inspector_window(scene, obj_combo)
                       
         fb.bind()
         # TODO: scene has a clear method `clear(color=True, depth=True)`
         glClearColor(scene.clear_color.r, scene.clear_color.g, scene.clear_color.b, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         
-        for _, obj in objects.items():
+        for _, obj in scene.objects.items():
             # TODO maybe: a scene.render_object() method (might take uniforms)
             obj.shader.bind()
             glBindVertexArray(obj.mesh.vao)
@@ -153,12 +131,7 @@ def main():
             glBindVertexArray(0)
             obj.shader.unbind()
         fb.unbind()
-        
-        if (showAssetsWindow):
-            _, showAssetsWindow = ui.draw_assets_window(assets)
-        if (showTextureViewerWindow):
-            _, showTextureViewerWindow = ui.draw_texture_viewer_window(tex_combo)
-        
+               
         glActiveTexture(GL_TEXTURE0)
         scene_tex.bind()
         glActiveTexture(GL_TEXTURE0 + 1)
@@ -174,6 +147,11 @@ def main():
         assets.shaders["fullscreen"].bind()
         assets.shaders["fullscreen"].set_uniform_vec3("eyePos", scene.cam.position)
         glDrawArrays(GL_TRIANGLES, 0, 3)
+
+        if (showAssetsWindow):
+            _, showAssetsWindow = ui.draw_assets_window(assets)
+        if (showTextureViewerWindow):
+            _, showTextureViewerWindow = ui.draw_texture_viewer_window(tex_combo)        
     
         renderer.end_frame()
         

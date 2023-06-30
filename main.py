@@ -90,6 +90,9 @@ def main():
     tex_names = ["scene", "world_pos", "world_normal", "uv", "depth", "mesh_id", "mesh_id_colored"]
     assert(len(tex_names) == len(fb.color_textures))
     tex_combo = ui.ComboBox("Select Texture", fb.color_textures, tex_names)
+    showAssetsWindow = False
+    showTextureViewerWindow = False
+    showInspectorWindow = True
     
     while renderer.is_running():
         renderer.begin_frame()
@@ -97,34 +100,40 @@ def main():
         scene.cam.aspect_ratio = renderer.win_size.x / renderer.win_size.y
         glViewport(0, 0, renderer.win_size.x, renderer.win_size.y)
 
-        ui.draw_assets_window(assets)
         
-        imgui.begin("Settings", True)
-        
-        if imgui.button("reload shaders"):
-            for shader in assets.shaders.values():
-                shader.reload()
-        imgui.separator()
-                
-        if (len(objects) > 0):
-            _, obj_name, obj = obj_combo.draw()
-            imgui.text(f"selected: {obj_name}")
-            ui.transform_widget(obj)    
+        if imgui.begin_main_menu_bar().opened:
+            if imgui.begin_menu('View', True).opened:
+                _, showAssetsWindow = imgui.core.menu_item("Assets", None, showAssetsWindow)
+                _, showTextureViewerWindow = imgui.core.menu_item("Texture Viewer", None, showTextureViewerWindow)
+                _, showInspectorWindow = imgui.core.menu_item("Inspector", None, showInspectorWindow)
+                imgui.end_menu()
+            imgui.end_main_menu_bar()
+       
+        if showInspectorWindow:
+            _, showInspectorWindow = imgui.begin("Inspector", True)
+            if imgui.button("reload shaders"):
+                for shader in assets.shaders.values():
+                    shader.reload()
             imgui.separator()
-        
-        # TODO: use color-picker for clear color UI
-        # TODO: move clear color UI to utils
-        _, clear_color = imgui.slider_float3("Clear Color", *scene.clear_color, min_value=0.0, max_value=1.0, format="%.3f")
-        scene.clear_color = glm.vec3(clear_color)
-        imgui.separator()
-        
-        # TODO: move orbit camera UI to utils
-        _, cam_r = imgui.slider_float("cam pos r", cam_r, 0.01, 10, "%.3f")
-        _, cam_theta = imgui.slider_float("cam pos theta", cam_theta, 0.0, math.pi, "%.3f")
-        _, cam_phi = imgui.slider_float("cam pos phi", cam_phi, 0.01, 2.0 * math.pi, "%.3f")
-        scene.cam.position = utils.spherical_to_cartesian(glm.vec3(cam_r, cam_theta, cam_phi))
-        
-        imgui.end()
+                    
+            if (len(objects) > 0):
+                _, obj_name, obj = obj_combo.draw()
+                imgui.text(f"selected: {obj_name}")
+                ui.transform_widget(obj)    
+                imgui.separator()   
+            
+            # TODO: use color-picker for clear color UI
+            # TODO: move clear color UI to utils
+            _, clear_color = imgui.slider_float3("Clear Color", *scene.clear_color, min_value=0.0, max_value=1.0, format="%.3f")
+            scene.clear_color = glm.vec3(clear_color)
+            imgui.separator()
+            
+            # TODO: move orbit camera UI to utils
+            _, cam_r = imgui.slider_float("cam pos r", cam_r, 0.01, 10, "%.3f")
+            _, cam_theta = imgui.slider_float("cam pos theta", cam_theta, 0.0, math.pi, "%.3f")
+            _, cam_phi = imgui.slider_float("cam pos phi", cam_phi, 0.01, 2.0 * math.pi, "%.3f")
+            scene.cam.position = utils.spherical_to_cartesian(glm.vec3(cam_r, cam_theta, cam_phi))
+            imgui.end()
                       
         fb.bind()
         # TODO: scene has a clear method `clear(color=True, depth=True)`
@@ -145,22 +154,25 @@ def main():
             obj.shader.unbind()
         fb.unbind()
         
-        imgui.begin("Texture Viewer", True, imgui.WINDOW_NO_SCROLLBAR)
-        _, _, viz_tex = tex_combo.draw()
-        imgui.separator()             
-        available_sz = imgui.get_content_region_available()
-        imgui.core.get_content_region_available_width()
-        win_ar = available_sz.x / available_sz.y
-        tex_ar = viz_tex.desc.width / viz_tex.desc.height
-        w, h = 1, 1
-        if tex_ar >= win_ar:
-            w = available_sz.x
-            h = w / tex_ar
-        else:
-            h = available_sz.y
-            w = h * tex_ar
-        imgui.image(viz_tex.get_id(), w, h, uv0=(0, 1), uv1=(1, 0), border_color=(1,1,0,1))
-        imgui.end()
+        if (showAssetsWindow):
+            _, showAssetsWindow = ui.draw_assets_window(assets)
+        if (showTextureViewerWindow):
+            _, showTextureViewerWindow = imgui.begin("Texture Viewer", True, imgui.WINDOW_NO_SCROLLBAR)
+            _, _, viz_tex = tex_combo.draw()
+            imgui.separator()             
+            available_sz = imgui.get_content_region_available()
+            imgui.core.get_content_region_available_width()
+            win_ar = available_sz.x / available_sz.y
+            tex_ar = viz_tex.desc.width / viz_tex.desc.height
+            w, h = 1, 1
+            if tex_ar >= win_ar:
+                w = available_sz.x
+                h = w / tex_ar
+            else:
+                h = available_sz.y
+                w = h * tex_ar
+            imgui.image(viz_tex.get_id(), w, h, uv0=(0, 1), uv1=(1, 0), border_color=(1,1,0,1))
+            imgui.end()
         
         glActiveTexture(GL_TEXTURE0)
         scene_tex.bind()

@@ -26,7 +26,7 @@ def transform_widget(obj: Object):
     obj.transform.scale = glm.vec3(scale)
 
 def draw_assets_window(assets):
-    imgui.begin("Assets", True)
+    has_clicked, is_open = imgui.begin("Assets", True)
     imgui.text("Meshes (name, vao, #vertices):")
     for name, mesh in assets.meshes.items():
         imgui.text(f"{name}, {mesh.vao}, {mesh.vertex_count}")
@@ -34,4 +34,5 @@ def draw_assets_window(assets):
     imgui.text("Shaders (name, program, vertex, fragment)")
     for name, shader in assets.shaders.items():
         imgui.text(f"{name}, {shader.get_id()}, {shader.vertex_file}, {shader.fragment_file}")
-    imgui.end()      
+    imgui.end()
+    return has_clicked, is_open

@@ -1,5 +1,7 @@
-#version 460
-uniform vec3 eyePos;
+#version 460 core
+
+layout(location = 3) uniform vec3 eyePos;
+layout(location = 4) uniform int meshId;
 
 struct VertexData {
   vec3 objectPosition;
@@ -11,10 +13,7 @@ struct VertexData {
   vec4 custom;
 };
 
-in VertexData v;
-
-uniform int meshId;
-
+layout(location = 0) in VertexData v;
 layout (location = 0) out vec4 outColor;
 layout (location = 1) out vec3 outWorldPos;
 layout (location = 2) out vec3 outWorldNormal;
@@ -50,6 +49,7 @@ void main () {
     vec3 surfToEye = eyePos - v.worldPosition;
     vec3 eyeVec = normalize(surfToEye);
     float specular = max(pow(dot(lightVecReflect, eyeVec), 32), 0);
+
     outColor = vec4(vec3(diffuse + specular), 1.0);
     outWorldPos = v.worldPosition;
     outWorldNormal = v.worldNormal;

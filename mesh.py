@@ -15,6 +15,7 @@ class Mesh:
         print(f"vao {self.vao}, vbo {vbo}")
         glBindBuffer(GL_ARRAY_BUFFER, vbo)
         glBufferData(GL_ARRAY_BUFFER, np_vertices, GL_STATIC_DRAW)
+        # glBufferData(GL_ARRAY_BUFFER, np_vertices.size * np_vertices.itemsize, np_vertices, GL_STATIC_DRAW)
         offset = 0
         # pos 3, tex 2, nrm 3, col 4
         sizes = [3, 2, 3, 4]

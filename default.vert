@@ -1,13 +1,14 @@
-#version 460
+#version 460 core
+
 layout(location = 0) in vec3 objectPosition;
 layout(location = 1) in vec2 texCoord;
 layout(location = 2) in vec3 objectNormal;
 layout(location = 3) in vec4 color;
 vec4 custom = vec4(0);
 
-uniform mat4 worldFromObject; // Model
-uniform mat4 viewFromWorld; // View
-uniform mat4 projectionFromView; // Projection
+layout(location = 0) uniform mat4 worldFromObject; // Model
+layout(location = 1) uniform mat4 viewFromWorld; // View
+layout(location = 2) uniform mat4 projectionFromView; // Projection
 
 struct VertexData {
   vec3 objectPosition;
@@ -29,9 +30,9 @@ VertexData fillVertexData(mat4 worldFromObject, vec3 objectPosition, vec3 object
   v.color = color;
   v.custom = custom;
   return v;
-}    
+}
 
-out VertexData v;
+layout(location = 0) out VertexData v;
 
 void main () {
     v = fillVertexData(worldFromObject, objectPosition, objectNormal, texCoord, color, custom);

@@ -33,7 +33,6 @@ from OpenGL.GL import (
 import traceback
 
 renderer = rndr.Renderer()
-MIGRATION_TO_SPIRV_COMPLETED = False
 
 def main():   
     renderer.init(1024, 768)
@@ -62,8 +61,7 @@ def main():
     assets.load_obj("quad", "models/quad.obj")
     assets.load_obj("sphere", "models/sphere.obj")
     assets.load_shader("default", "default.vert", "default.frag")
-    if MIGRATION_TO_SPIRV_COMPLETED:
-        assets.load_shader("fullscreen", "fullscreen_quad.vert", "fullscreen_quad.frag")
+    assets.load_shader("fullscreen", "fullscreen_quad.vert", "fullscreen_quad.frag")
     
     scene.objects["suzanne"] = Object(
         mesh=assets.meshes["monkey"], 
@@ -133,22 +131,25 @@ def main():
             obj.shader.unbind()
         fb.unbind()
 
-        if MIGRATION_TO_SPIRV_COMPLETED:
-            glActiveTexture(GL_TEXTURE0)
-            scene_tex.bind()
-            glActiveTexture(GL_TEXTURE0 + 1)
-            world_pos_tex.bind()
-            glActiveTexture(GL_TEXTURE0 + 2)
-            world_normal_tex.bind()
-            glActiveTexture(GL_TEXTURE0 + 3)
-            uv_tex.bind()
-            
-            # Clear editor background
-            glClearColor(0.2, 0.3, 0.4, 1.0)
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-            assets.shaders["fullscreen"].bind()
-            assets.shaders["fullscreen"].set_uniform_vec3("eyePos", scene.cam.position)
-            glDrawArrays(GL_TRIANGLES, 0, 3)
+        glActiveTexture(GL_TEXTURE0)
+        scene_tex.bind()
+        glActiveTexture(GL_TEXTURE0 + 1)
+        world_pos_tex.bind()
+        glActiveTexture(GL_TEXTURE0 + 2)
+        world_normal_tex.bind()
+        glActiveTexture(GL_TEXTURE0 + 3)
+        uv_tex.bind()
+        glActiveTexture(GL_TEXTURE0 + 4)
+        mesh_id_tex.bind()
+        
+        # Clear editor background
+        glClearColor(scene.clear_color.r, scene.clear_color.g, scene.clear_color.b, 1)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        assets.shaders["fullscreen"].bind()
+        assets.shaders["fullscreen"].set_uniform_vec3("eyePos", scene.cam.position)
+        glBindVertexArray(renderer.empty_vao)
+        glDrawArrays(GL_TRIANGLES, 0, 3)
+        assets.shaders["fullscreen"].unbind()
 
         if (showAssetsWindow):
             _, showAssetsWindow = ui.draw_assets_window(assets)

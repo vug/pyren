@@ -5,7 +5,7 @@ import glm
 import imgui
 from imgui.integrations.glfw import GlfwRenderer
 import numpy as np
-from OpenGL.GL import GL_FLOAT, GL_INT
+from OpenGL.GL import GL_FLOAT, GL_INT, glGenVertexArrays
 # Texture related imports
 from OpenGL.GL import GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT32
 from OpenGL.GL import GL_RGB, GL_RGB8, GL_UNSIGNED_BYTE, GL_RGB32F
@@ -31,6 +31,7 @@ class Renderer:
         glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 4)
         glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 6)
         glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
+        # glfw.window_hint(glfw.SAMPLES, 4)
         # glfw.window_hint(glfw.OPENGL_DEBUG_CONTEXT, True)  # TODO: bring debug context
         self.window = glfw.create_window(self.win_size.x, self.win_size.y, "PyRen", None, None)
         # initialize openGL context before calling any gl functions such as `glGenVertexArrays`
@@ -47,6 +48,8 @@ class Renderer:
 
         glEnable(GL_DEPTH_TEST)
         glDepthFunc(GL_LESS)
+
+        self.empty_vao = glGenVertexArrays(1)
 
     def deinit(self):
         # due to some error we were not able to call imgui.end_frame()

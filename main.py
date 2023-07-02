@@ -60,8 +60,8 @@ def main():
     assets.load_obj("cubeTri", "models/cubeTri.obj")
     assets.load_obj("quad", "models/quad.obj")
     assets.load_obj("sphere", "models/sphere.obj")
-    assets.load_shader("default", "default.vert", "default.frag")
-    assets.load_shader("fullscreen", "fullscreen_quad.vert", "fullscreen_quad.frag")
+    assets.load_shader("default", "shaders/default.vert", "shaders/default.frag")
+    assets.load_shader("fullscreen", "shaders/fullscreen_quad.vert", "shaders/fullscreen_quad.frag")
     
     scene.objects["suzanne"] = Object(
         mesh=assets.meshes["monkey"], 

@@ -1,6 +1,6 @@
 #version 460 core
 
-#include "common.glsl"
+#include "lib/common.glsl"
 
 layout(location = 0) in vec3 objectPosition;
 layout(location = 1) in vec2 texCoord;

@@ -1,6 +1,6 @@
 #version 460 core
 
-#include "common.glsl"
+#include "lib/common.glsl"
 
 layout(location = 0) in VertexData v;
 layout (location = 0) out vec4 outColor;

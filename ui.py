@@ -39,18 +39,16 @@ def draw_inspector_window(scene, obj_combo):
         imgui.text(f"selected: {obj_name}")
         transform_widget(obj)    
         imgui.separator()   
-    
-    # TODO: use color-picker for clear color UI
-    # TODO: move clear color UI to utils
-    _, clear_color = imgui.slider_float3("Clear Color", *scene.clear_color, min_value=0.0, max_value=1.0, format="%.3f")
-    scene.clear_color = glm.vec3(clear_color)
-    imgui.separator()
-    
+       
     # TODO: move orbit camera UI to utils
     _, cam_r = imgui.slider_float("cam pos r", cam_r, 0.01, 10, "%.3f")
     _, cam_theta = imgui.slider_float("cam pos theta", cam_theta, 0.0, math.pi, "%.3f")
     _, cam_phi = imgui.slider_float("cam pos phi", cam_phi, 0.01, 2.0 * math.pi, "%.3f")
     scene.cam.position = utils.spherical_to_cartesian(glm.vec3(cam_r, cam_theta, cam_phi))
+    imgui.separator()
+
+    _, (scene.clear_color.r, scene.clear_color.g, scene.clear_color.b) = imgui.color_edit3("Clear Color", *scene.clear_color)
+    _, (scene.ambient_light.color.r, scene.ambient_light.color.g, scene.ambient_light.color.b) = imgui.color_edit3("Ambient", *scene.ambient_light.color)
     imgui.end()
     return has_clicked, is_open
 

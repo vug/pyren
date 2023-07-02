@@ -8,7 +8,7 @@ from OpenGL.GL import GL_TEXTURE_2D
 
 
 class Framebuffer:
-    def __init__(self, color_textures:[Texture], depth_texture: Texture=None, stencil_texture: Texture=None):
+    def __init__(self, color_textures: list[Texture], depth_texture: Texture=None, stencil_texture: Texture=None):
         self._id = glGenFramebuffers(1)
         self.color_textures = color_textures
         self.depth_texture = depth_texture

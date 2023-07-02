@@ -22,8 +22,7 @@ from OpenGL.GL import (
     GL_DEPTH_BUFFER_BIT,
     GL_TRIANGLES,
     glBindVertexArray,
-    glClear,
-    glClearColor,
+    glClear, glClearColor, glClearTexImage,
     glDrawArrays,
     #
     glActiveTexture, GL_TEXTURE0, glViewport
@@ -38,7 +37,8 @@ def main():
     renderer.init(1024, 768)
     
     scene = Scene(renderer)
-    scene.clear_color = glm.vec3([0.0, 0.0, 0.4])
+    scene.clear_color = glm.vec3([0.1, 0.15, 0.2])
+    scene.ambient_light.color = glm.vec3([0.1, 0.025, 0.025])
     
     scene_tex = renderer.make_tex_3channel_8bit()
     world_pos_tex = renderer.make_tex_3channel_flt32()
@@ -114,7 +114,9 @@ def main():
                       
         fb.bind()
         # TODO: scene has a clear method `clear(color=True, depth=True)`
-        glClearColor(scene.clear_color.r, scene.clear_color.g, scene.clear_color.b, 1.0)
+        # glClearColor(scene.clear_color.r, scene.clear_color.g, scene.clear_color.b, 1.0)
+        # glClearTexImage(fb.color_textures[0].get_id(), 0, fb.color_textures[0].desc.format, fb.color_textures[0].desc.type, glm.value_ptr(scene.clear_color))
+        glClearColor(0, 0, 0, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         
         for _, obj in scene.objects.items():
@@ -132,7 +134,7 @@ def main():
             obj.shader.unbind()
         fb.unbind()
 
-        glActiveTexture(GL_TEXTURE0)
+        glActiveTexture(GL_TEXTURE0 + 0)
         scene_tex.bind()
         glActiveTexture(GL_TEXTURE0 + 1)
         world_pos_tex.bind()

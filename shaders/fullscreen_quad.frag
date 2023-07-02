@@ -2,7 +2,8 @@
 layout (location = 0) in vec3 fragColor;
 layout (location = 1) in vec2 texCoords;
 
-layout (location = 0) uniform vec3 eyePos;
+#include "lib/scene_uniforms.glsl"
+#include "lib/AmbientLight.glsl"
 
 layout (binding = 0) uniform sampler2D sceneRenderTex;
 layout (binding = 1) uniform sampler2D worldPosTex;
@@ -38,5 +39,5 @@ void main () {
     //outColor = vec4(fragColor, 1.0);
     //outColor = vec4(texCoords.x, texCoords.y, 0, 1);
     //outColor = vec4(worldPos, 1);    
-    outColor = vec4(vec3(diffuse + specular), 1.0);
+    outColor = vec4(vec3(diffuse + specular + illuminate(ambientLight)), 1.0);
 }

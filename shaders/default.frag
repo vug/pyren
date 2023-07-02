@@ -3,6 +3,9 @@
 #include "lib/common.glsl"
 
 layout(location = 0) in VertexData v;
+
+#include "lib/AmbientLight.glsl"
+
 layout (location = 0) out vec4 outColor;
 layout (location = 1) out vec3 outWorldPos;
 layout (location = 2) out vec3 outWorldNormal;
@@ -12,6 +15,7 @@ layout (location = 5) out int outMeshId;
 layout (location = 6) out vec3 outMeshIdColored;
 
 void main () {
+    // Direct rendering example
     vec3 lightPos = vec3(0.0f, 3.0f, 0.0f);
     vec3 surfToLight = lightPos - v.worldPosition;
     float surfToLightMag = length(surfToLight);
@@ -23,7 +27,9 @@ void main () {
     vec3 eyeVec = normalize(surfToEye);
     float specular = max(pow(dot(lightVecReflect, eyeVec), 32), 0);
 
-    outColor = vec4(vec3(diffuse + specular), 1.0);
+    outColor = vec4(vec3(diffuse + specular + illuminate(ambientLight)), 1.0);
+
+    // Data for deferred rendering
     outWorldPos = v.worldPosition;
     outWorldNormal = v.worldNormal;
     outUV = v.texCoord;

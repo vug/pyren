@@ -1,5 +1,5 @@
 from camera import Camera
-from lights import AmbientLight, DirectionalLight, HemisphericalLight
+from lights import AmbientLight, DirectionalLight, HemisphericalLight, PointLight
 
 import glm
 
@@ -12,6 +12,7 @@ class Scene:
         self.ambient_light: AmbientLight = AmbientLight()
         self.directional_light: DirectionalLight = DirectionalLight()
         self.hemispherical_light: HemisphericalLight = HemisphericalLight()
+        self.point_lights: list[PointLight] = []
 
 class Object:
     def __init__(self, mesh, transform, shader):

@@ -8,8 +8,12 @@
 layout(location = 0) in VertexData v;
 
 #include "lib/AmbientLight.glsl"
+
 #include "lib/DirectionalLight.glsl"
+
 #include "lib/HemisphericalLight.glsl"
+
+#include "lib/PointLight.glsl"
 
 layout (location = 0) out vec4 outColor;
 layout (location = 1) out vec3 outWorldPos;
@@ -21,24 +25,16 @@ layout (location = 6) out vec3 outMeshIdColored;
 
 void main () {
     vec3 worldNormal = normalize(v.worldNormal);
+    const float specularCoef = 32.0;
 
-    // Direct rendering example
-    vec3 lightPos = vec3(0.0f, 3.0f, 0.0f);
-    vec3 surfToLight = lightPos - v.worldPosition;
-    float surfToLightMag = length(surfToLight);
-    vec3 lightVec = surfToLight / surfToLightMag;
-    float diffuse = max(dot(lightVec, worldNormal), 0) / (surfToLightMag * surfToLightMag);
-    
-    vec3 lightVecReflect = normalize(reflect(lightVec, worldNormal));
-    vec3 surfToEye = eyePos - v.worldPosition;
-    vec3 eyeVec = normalize(surfToEye);
-    float specular = max(pow(dot(lightVecReflect, eyeVec), 32), 0);
-
+    vec3 pointLight = vec3(0);
+    for (int i = 0; i < numPointLights; i++)
+      pointLight += illuminate(pointLights[i], v.worldPosition, worldNormal, eyePos, specularCoef);
     const vec3 color = vec3(
-        diffuse + specular 
-        + illuminate(ambientLight)
-        + illuminate(directionalLight, v.worldPosition, worldNormal, eyePos, 32)
+        illuminate(ambientLight)
+        + illuminate(directionalLight, v.worldPosition, worldNormal, eyePos, specularCoef)
         + illuminate(hemisphericalLight, worldNormal)
+        + pointLight
     );
     outColor = vec4(color, 1.0);
 

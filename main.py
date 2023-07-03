@@ -10,6 +10,7 @@ REF:
 """
 from assets import Assets
 from framebuffer import Framebuffer
+from lights import PointLight
 import renderer as rndr
 from scene import Scene, Object
 import ui
@@ -54,10 +55,12 @@ def main():
     scene = Scene(renderer)
     scene.clear_color = glm.vec3([0.1, 0.15, 0.2])
     scene.ambient_light.color = glm.vec3([0.1, 0.025, 0.025])
-    scene.directional_light.intensity = 0
+    scene.ambient_light.color = glm.vec3(0, 0, 0)
+    scene.directional_light.intensity = 0.4
     scene.directional_light.direction = glm.vec3([-2, -1, 0])
-    scene.directional_light.color = glm.vec3([43, 51, 26]) / 255
-    scene.hemispherical_light.intensity = 1       
+    scene.directional_light.color = glm.vec3([165, 218, 55]) / 255
+    scene.hemispherical_light.intensity = 0.3
+    scene.point_lights.append(PointLight(color=glm.vec3(1, 0, 0)))
     scene.objects["suzanne"] = Object(
         mesh=assets.meshes["monkey"], 
         transform=utils.Transform(translation=glm.vec3(0.5, 0.5, 0.5), rotation_yxz=glm.vec3(0, 0, 0), scale=glm.vec3(.3, .3, .3)),
@@ -131,6 +134,8 @@ def main():
             scene.ambient_light.upload_to_shader(obj.shader)
             scene.directional_light.upload_to_shader(obj.shader)
             scene.hemispherical_light.upload_to_shader(obj.shader)
+            for pl in scene.point_lights:
+                pl.upload_to_shader(obj.shader)
             glDrawArrays(GL_TRIANGLES, 0, obj.mesh.vertex_count)
             glBindVertexArray(0)
             obj.shader.unbind()
@@ -156,6 +161,8 @@ def main():
         scene.ambient_light.upload_to_shader(fullscreen_shader)
         scene.directional_light.upload_to_shader(fullscreen_shader)
         scene.hemispherical_light.upload_to_shader(fullscreen_shader)
+        for pl in scene.point_lights:
+            pl.upload_to_shader(obj.shader)        
         glBindVertexArray(renderer.empty_vao)
         glDrawArrays(GL_TRIANGLES, 0, 3)
         fullscreen_shader.unbind()      

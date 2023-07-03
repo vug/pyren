@@ -30,3 +30,22 @@ class HemisphericalLight:
         shader.set_uniform_float1('hemisphericalLight.intensity', self.intensity)
         shader.set_uniform_vec3('hemisphericalLight.northColor', self.north_color)
         shader.set_uniform_vec3('hemisphericalLight.southColor', self.south_color)
+
+class PointLight:
+    numPointLights = 0
+    MAX_POINT_LIGHTS = 8  # in sync with the value in PointLight.glsl
+
+    def __init__(self, position=glm.vec3(0, 0, 0), intensity=1.0, color=glm.vec3(1, 1, 1)):
+        self.ix = PointLight.numPointLights
+        PointLight.numPointLights += 1
+        assert(PointLight.numPointLights <= PointLight.MAX_POINT_LIGHTS)
+
+        self.position = position
+        self.intensity = intensity
+        self.color = color
+
+    def upload_to_shader(self, shader: Shader):
+        shader.set_uniform_vec3(f"pointLights[{self.ix}].position", self.position)       
+        shader.set_uniform_float1(f"pointLights[{self.ix}].intensity", self.intensity)
+        shader.set_uniform_vec3(f"pointLights[{self.ix}].color", self.color)
+        shader.set_uniform_int1("numPointLights", PointLight.numPointLights)

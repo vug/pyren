@@ -1,8 +1,6 @@
 #ifndef COMMON_GLSL
 #define COMMON_GLSL
 
-// A set of utility functions that can be included from anywhere thanks to "include guards"
-
 vec3 colorFromIndex(uint index) {
   uint a = (index & (1 << 0)) != 0 ? 1 : 0;
   uint d = (index & (1 << 1)) != 0 ? 1 : 0;

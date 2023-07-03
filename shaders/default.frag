@@ -37,7 +37,7 @@ void main () {
     const vec3 color = vec3(
         diffuse + specular 
         + illuminate(ambientLight)
-        // + illuminate(directionalLight, v.worldPosition, worldNormal, eyePos, 32)
+        + illuminate(directionalLight, v.worldPosition, worldNormal, eyePos, 32)
         + illuminate(hemisphericalLight, worldNormal)
     );
     outColor = vec4(color, 1.0);

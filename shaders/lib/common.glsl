@@ -1,3 +1,8 @@
+#ifndef COMMON_GLSL
+#define COMMON_GLSL
+
+// A set of utility functions that can be included from anywhere thanks to "include guards"
+
 vec3 colorFromIndex(uint index) {
   uint a = (index & (1 << 0)) != 0 ? 1 : 0;
   uint d = (index & (1 << 1)) != 0 ? 1 : 0;
@@ -13,3 +18,9 @@ vec3 colorFromIndex(uint index) {
 
   return vec3(a*4+b*2+c, d*4+e*2+f, g*4+h*2+i) / 7.0f;
 }
+
+float map(float value, float min1, float max1, float min2, float max2) {
+  return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
+}
+
+#endif

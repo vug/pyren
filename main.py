@@ -18,16 +18,10 @@ import utils
 import glm
 import imgui
 from OpenGL.GL import (
-    GL_COLOR_BUFFER_BIT,
-    GL_DEPTH_BUFFER_BIT,
-    GL_TRIANGLES,
-    glBindVertexArray,
-    glClear, glClearColor, glClearTexImage,
-    glDrawArrays,
-    #
+    GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, glClear, glClearColor,
+    GL_TRIANGLES, glBindVertexArray, glDrawArrays,
     glActiveTexture, GL_TEXTURE0, glViewport
-
-)  # everything here starts with glXYZ or GL_XYZ
+)
 
 import traceback
 
@@ -35,15 +29,16 @@ renderer = rndr.Renderer()
 
 def main():   
     renderer.init(1024, 768)
-    
-    scene = Scene(renderer)
-    scene.clear_color = glm.vec3([0.1, 0.15, 0.2])
-    scene.ambient_light.color = glm.vec3([0.1, 0.025, 0.025])
-    scene.directional_light.intensity = 0
-    scene.directional_light.direction = glm.vec3([-2, -1, 0])
-    scene.directional_light.color = glm.vec3([43, 51, 26]) / 255
-    scene.hemispherical_light.intensity = 1
-    
+
+    assets = Assets(renderer)
+    assets.load_obj("monkey", "models/monkey.obj")
+    assets.load_obj("ship", "models/ship.obj")
+    assets.load_obj("cubeTri", "models/cubeTri.obj")
+    assets.load_obj("quad", "models/quad.obj")
+    assets.load_obj("sphere", "models/sphere.obj")
+    assets.load_shader("default", "shaders/default.vert", "shaders/default.frag")
+    assets.load_shader("fullscreen", "shaders/fullscreen_quad.vert", "shaders/fullscreen_quad.frag")    
+
     scene_tex = renderer.make_tex_3channel_8bit()
     world_pos_tex = renderer.make_tex_3channel_flt32()
     world_normal_tex = renderer.make_tex_3channel_flt32()
@@ -54,19 +49,15 @@ def main():
     fb = Framebuffer(
         color_textures=[scene_tex, world_pos_tex, world_normal_tex, uv_tex, my_depth_tex, mesh_id_tex, mesh_id_colored_tex], 
         depth_texture=renderer.make_default_depth_tex()
-    )
+    )    
     
-    #globals().update(locals())
-    
-    assets = Assets(renderer)
-    assets.load_obj("monkey", "models/monkey.obj")
-    assets.load_obj("ship", "models/ship.obj")
-    assets.load_obj("cubeTri", "models/cubeTri.obj")
-    assets.load_obj("quad", "models/quad.obj")
-    assets.load_obj("sphere", "models/sphere.obj")
-    assets.load_shader("default", "shaders/default.vert", "shaders/default.frag")
-    assets.load_shader("fullscreen", "shaders/fullscreen_quad.vert", "shaders/fullscreen_quad.frag")
-    
+    scene = Scene(renderer)
+    scene.clear_color = glm.vec3([0.1, 0.15, 0.2])
+    scene.ambient_light.color = glm.vec3([0.1, 0.025, 0.025])
+    scene.directional_light.intensity = 0
+    scene.directional_light.direction = glm.vec3([-2, -1, 0])
+    scene.directional_light.color = glm.vec3([43, 51, 26]) / 255
+    scene.hemispherical_light.intensity = 1       
     scene.objects["suzanne"] = Object(
         mesh=assets.meshes["monkey"], 
         transform=utils.Transform(translation=glm.vec3(0.5, 0.5, 0.5), rotation_yxz=glm.vec3(0, 0, 0), scale=glm.vec3(.3, .3, .3)),
@@ -90,13 +81,14 @@ def main():
     showAssetsWindow = False
     showTextureViewerWindow = True
     showInspectorWindow = True
+
+    #globals().update(locals())
     
     while renderer.is_running():
         renderer.begin_frame()
         fb.resize_if_needed(renderer.win_size.x, renderer.win_size.y)
         scene.cam.aspect_ratio = renderer.win_size.x / renderer.win_size.y
         glViewport(0, 0, renderer.win_size.x, renderer.win_size.y)
-
         
         if imgui.begin_main_menu_bar().opened:
             if imgui.begin_menu('View', True).opened:
@@ -115,6 +107,10 @@ def main():
        
         if showInspectorWindow:
             _, showInspectorWindow = ui.draw_inspector_window(scene, obj_combo)
+        if (showAssetsWindow):
+            _, showAssetsWindow = ui.draw_assets_window(assets)
+        if (showTextureViewerWindow):
+            _, showTextureViewerWindow = ui.draw_texture_viewer_window(tex_combo)              
                       
         fb.bind()
         # TODO: scene has a clear method `clear(color=True, depth=True)`
@@ -162,12 +158,7 @@ def main():
         scene.hemispherical_light.upload_to_shader(fullscreen_shader)
         glBindVertexArray(renderer.empty_vao)
         glDrawArrays(GL_TRIANGLES, 0, 3)
-        fullscreen_shader.unbind()
-
-        if (showAssetsWindow):
-            _, showAssetsWindow = ui.draw_assets_window(assets)
-        if (showTextureViewerWindow):
-            _, showTextureViewerWindow = ui.draw_texture_viewer_window(tex_combo)        
+        fullscreen_shader.unbind()      
     
         renderer.end_frame()
         

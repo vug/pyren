@@ -1,7 +1,7 @@
 import glm
 # Shader related imports
 from OpenGL.GL import GL_FALSE
-from OpenGL.GL import GL_FRAGMENT_SHADER, GL_VERTEX_SHADER, glCompileShader, glCreateShader, glDeleteShader, glDetachShader, glGetShaderiv, glGetShaderInfoLog
+from OpenGL.GL import GL_FRAGMENT_SHADER, GL_VERTEX_SHADER, glCompileShader, glCreateShader, glDeleteShader, glDetachShader, glGetShaderiv, glGetShaderInfoLog, glGetProgramInfoLog
 from OpenGL.GL import glGetUniformLocation, glUniform1i, glUniform1f, glUniform3fv, glUniformMatrix4fv
 from OpenGL.GL import GL_COMPILE_STATUS, GL_LINK_STATUS, glAttachShader, glCreateProgram, glGetProgramiv, glLinkProgram, glShaderSource, glUseProgram, GL_INFO_LOG_LENGTH
 from OpenGL.GL import glShaderBinary, glSpecializeShader, GL_SHADER_BINARY_FORMAT_SPIR_V, glProgramUniformMatrix4fv, glGetShaderSource
@@ -86,7 +86,7 @@ class Shader:
             glCompileShader(vs)
         status = glGetShaderiv(vs, GL_COMPILE_STATUS)
         if status != 1:
-            print('VERTEX SHADER ERROR')
+            print('[ERROR] Vertex shader compilation with status {status}')
             print(glGetShaderInfoLog(vs).decode())
             glDeleteShader(vs)
             return -1
@@ -102,7 +102,7 @@ class Shader:
             glCompileShader(fs)
         status = glGetShaderiv(fs, GL_COMPILE_STATUS)
         if status != 1:
-            print('FRAGMENT SHADER ERROR')
+            print('[ERROR] Fragment shader compilation with status {status}')
             print(glGetShaderInfoLog(fs).decode())
             glDeleteShader(vs)
             glDeleteShader(fs)
@@ -118,9 +118,8 @@ class Shader:
         glLinkProgram(self.get_id())
         status = glGetProgramiv(self.get_id(), GL_LINK_STATUS)
         if status != 1:
-            print(f"[ERR] Shader linking failed with status {status}")
-            glGetShaderiv(self.get_id(), GL_INFO_LOG_LENGTH)
-            print('SHADER PROGRAM', glGetShaderInfoLog(self.get_id()))
+            print(f"[ERROR] Shader linking failed with status {status}")
+            print(glGetProgramInfoLog(self.get_id()).decode())
             glDeleteShader(vs)
             glDeleteShader(fs)
             return -1

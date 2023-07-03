@@ -48,7 +48,10 @@ def draw_inspector_window(scene, obj_combo):
     imgui.separator()
 
     _, (scene.clear_color.r, scene.clear_color.g, scene.clear_color.b) = imgui.color_edit3("Clear Color", *scene.clear_color)
-    _, (scene.ambient_light.color.r, scene.ambient_light.color.g, scene.ambient_light.color.b) = imgui.color_edit3("Ambient", *scene.ambient_light.color)
+    _, (scene.ambient_light.color.r, scene.ambient_light.color.g, scene.ambient_light.color.b) = imgui.color_edit3("Ambient.Color", *scene.ambient_light.color)
+    _, (scene.directional_light.direction.x, scene.directional_light.direction.y, scene.directional_light.direction.z) = imgui.drag_float3("Directional.Direction", *scene.directional_light.direction, change_speed=0.1)
+    _, scene.directional_light.intensity = imgui.drag_float("Directional.Intensity", scene.directional_light.intensity, change_speed=0.1, min_value=0.0)
+    _, (scene.directional_light.color.r, scene.directional_light.color.g, scene.directional_light.color.b) = imgui.color_edit3("Directional.Color", *scene.directional_light.color)
     imgui.end()
     return has_clicked, is_open
 

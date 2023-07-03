@@ -2,7 +2,7 @@ import glm
 # Shader related imports
 from OpenGL.GL import GL_FALSE
 from OpenGL.GL import GL_FRAGMENT_SHADER, GL_VERTEX_SHADER, glCompileShader, glCreateShader, glDeleteShader, glDetachShader, glGetShaderiv, glGetShaderInfoLog
-from OpenGL.GL import glGetUniformLocation, glUniform1i, glUniform3fv, glUniformMatrix4fv
+from OpenGL.GL import glGetUniformLocation, glUniform1i, glUniform1f, glUniform3fv, glUniformMatrix4fv
 from OpenGL.GL import GL_COMPILE_STATUS, GL_LINK_STATUS, glAttachShader, glCreateProgram, glGetProgramiv, glLinkProgram, glShaderSource, glUseProgram
 from OpenGL.GL import glShaderBinary, glSpecializeShader, GL_SHADER_BINARY_FORMAT_SPIR_V, glProgramUniformMatrix4fv
 import pyshaderc
@@ -56,6 +56,10 @@ class Shader:
     def set_uniform_int1(self, name, val):
       loc = glGetUniformLocation(self._id, name)
       glUniform1i(loc, val)
+
+    def set_uniform_float1(self, name, val):
+      loc = glGetUniformLocation(self._id, name)
+      glUniform1f(loc, val)
 
     def set_uniform_vec3(self, name, val):
         loc = glGetUniformLocation(self._id, name)

@@ -39,6 +39,9 @@ def main():
     scene = Scene(renderer)
     scene.clear_color = glm.vec3([0.1, 0.15, 0.2])
     scene.ambient_light.color = glm.vec3([0.1, 0.025, 0.025])
+    scene.directional_light.intensity = 4
+    scene.directional_light.direction = glm.vec3([-2, -1, 0])
+    scene.directional_light.color = glm.vec3([43, 51, 26]) / 255
     
     scene_tex = renderer.make_tex_3channel_8bit()
     world_pos_tex = renderer.make_tex_3channel_flt32()
@@ -129,6 +132,7 @@ def main():
             obj.shader.set_uniform_vec3("eyePos", scene.cam.position)
             obj.shader.set_uniform_int1("meshId", obj.mesh.vao)
             scene.ambient_light.upload_to_shader(obj.shader)
+            scene.directional_light.upload_to_shader(obj.shader)
             glDrawArrays(GL_TRIANGLES, 0, obj.mesh.vertex_count)
             glBindVertexArray(0)
             obj.shader.unbind()
@@ -151,6 +155,7 @@ def main():
         assets.shaders["fullscreen"].bind()
         assets.shaders["fullscreen"].set_uniform_vec3("eyePos", scene.cam.position)
         scene.ambient_light.upload_to_shader(obj.shader)
+        scene.directional_light.upload_to_shader(obj.shader)
         glBindVertexArray(renderer.empty_vao)
         glDrawArrays(GL_TRIANGLES, 0, 3)
         assets.shaders["fullscreen"].unbind()

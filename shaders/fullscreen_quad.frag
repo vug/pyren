@@ -4,6 +4,7 @@ layout (location = 1) in vec2 texCoords;
 
 #include "lib/scene_uniforms.glsl"
 #include "lib/AmbientLight.glsl"
+#include "lib/DirectionalLight.glsl"
 
 layout (binding = 0) uniform sampler2D sceneRenderTex;
 layout (binding = 1) uniform sampler2D worldPosTex;
@@ -39,5 +40,10 @@ void main () {
     //outColor = vec4(fragColor, 1.0);
     //outColor = vec4(texCoords.x, texCoords.y, 0, 1);
     //outColor = vec4(worldPos, 1);    
-    outColor = vec4(vec3(diffuse + specular + illuminate(ambientLight)), 1.0);
+    vec3 color = vec3(
+        diffuse + specular 
+        + illuminate(ambientLight)
+        + illuminate(directionalLight, worldPos, worldNormal, eyePos, 32)
+    );
+    outColor = vec4(color, 1.0);
 }

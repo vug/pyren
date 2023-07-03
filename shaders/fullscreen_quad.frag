@@ -4,7 +4,7 @@ layout (location = 1) in vec2 texCoords;
 
 #include "lib/scene_uniforms.glsl"
 #include "lib/AmbientLight.glsl"
-// #include "lib/DirectionalLight.glsl"
+#include "lib/DirectionalLight.glsl"
 #include "lib/HemisphericalLight.glsl"
 
 layout (binding = 0) uniform sampler2D sceneRenderTex;
@@ -44,7 +44,7 @@ void main () {
     vec3 color = vec3(
         diffuse + specular 
         + illuminate(ambientLight)
-        // + illuminate(directionalLight, worldPos, worldNormal, eyePos, 32)
+        + illuminate(directionalLight, worldPos, worldNormal, eyePos, 32)
         + illuminate(hemisphericalLight, worldNormal)
     );
     outColor = vec4(color, 1.0);

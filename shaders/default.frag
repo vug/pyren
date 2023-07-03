@@ -8,7 +8,7 @@
 layout(location = 0) in VertexData v;
 
 #include "lib/AmbientLight.glsl"
-// #include "lib/DirectionalLight.glsl"
+#include "lib/DirectionalLight.glsl"
 #include "lib/HemisphericalLight.glsl"
 
 layout (location = 0) out vec4 outColor;

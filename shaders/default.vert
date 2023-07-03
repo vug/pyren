@@ -1,5 +1,8 @@
 #version 460 core
+// #extension GL_GOOGLE_include_directive : enable
 
+#include "lib/vertex_data.glsl"
+#include "lib/scene_uniforms.glsl"
 #include "lib/common.glsl"
 
 layout(location = 0) in vec3 objectPosition;

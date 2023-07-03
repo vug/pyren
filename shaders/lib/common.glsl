@@ -1,6 +1,3 @@
-#include "vertex_data.glsl"
-#include "scene_uniforms.glsl"
-
 vec3 colorFromIndex(uint index) {
   uint a = (index & (1 << 0)) != 0 ? 1 : 0;
   uint d = (index & (1 << 1)) != 0 ? 1 : 0;

@@ -5,3 +5,4 @@ layout(location = 3) uniform vec3 eyePos;
 layout(location = 4) uniform int meshId;
 // layout(location = 5) uniform AmbientLight ambientLight; // declared in AmbientLight.glsl
 // layout(location = 6) uniform DirectionalLight directionalLight; // declared in DirectionalLight.glsl
+// layout(location = 7) uniform HemisphericalLight hemisphericalLight; // declared in HemisphericalLight.glsl

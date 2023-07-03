@@ -39,9 +39,10 @@ def main():
     scene = Scene(renderer)
     scene.clear_color = glm.vec3([0.1, 0.15, 0.2])
     scene.ambient_light.color = glm.vec3([0.1, 0.025, 0.025])
-    scene.directional_light.intensity = 4
+    scene.directional_light.intensity = 0
     scene.directional_light.direction = glm.vec3([-2, -1, 0])
     scene.directional_light.color = glm.vec3([43, 51, 26]) / 255
+    scene.hemispherical_light.intensity = 1
     
     scene_tex = renderer.make_tex_3channel_8bit()
     world_pos_tex = renderer.make_tex_3channel_flt32()
@@ -133,6 +134,7 @@ def main():
             obj.shader.set_uniform_int1("meshId", obj.mesh.vao)
             scene.ambient_light.upload_to_shader(obj.shader)
             scene.directional_light.upload_to_shader(obj.shader)
+            scene.hemispherical_light.upload_to_shader(obj.shader)
             glDrawArrays(GL_TRIANGLES, 0, obj.mesh.vertex_count)
             glBindVertexArray(0)
             obj.shader.unbind()
@@ -152,13 +154,15 @@ def main():
         # Clear editor background
         glClearColor(scene.clear_color.r, scene.clear_color.g, scene.clear_color.b, 1)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        assets.shaders["fullscreen"].bind()
-        assets.shaders["fullscreen"].set_uniform_vec3("eyePos", scene.cam.position)
-        scene.ambient_light.upload_to_shader(obj.shader)
-        scene.directional_light.upload_to_shader(obj.shader)
+        fullscreen_shader = assets.shaders["fullscreen"]
+        fullscreen_shader.bind()
+        fullscreen_shader.set_uniform_vec3("eyePos", scene.cam.position)
+        scene.ambient_light.upload_to_shader(fullscreen_shader)
+        scene.directional_light.upload_to_shader(fullscreen_shader)
+        scene.hemispherical_light.upload_to_shader(fullscreen_shader)
         glBindVertexArray(renderer.empty_vao)
         glDrawArrays(GL_TRIANGLES, 0, 3)
-        assets.shaders["fullscreen"].unbind()
+        fullscreen_shader.unbind()
 
         if (showAssetsWindow):
             _, showAssetsWindow = ui.draw_assets_window(assets)

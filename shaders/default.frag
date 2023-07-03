@@ -1,11 +1,15 @@
 #version 460 core
+// #extension GL_GOOGLE_include_directive : enable
 
+#include "lib/vertex_data.glsl"
+#include "lib/scene_uniforms.glsl"
 #include "lib/common.glsl"
 
 layout(location = 0) in VertexData v;
 
 #include "lib/AmbientLight.glsl"
-#include "lib/DirectionalLight.glsl"
+// #include "lib/DirectionalLight.glsl"
+#include "lib/HemisphericalLight.glsl"
 
 layout (location = 0) out vec4 outColor;
 layout (location = 1) out vec3 outWorldPos;
@@ -33,7 +37,9 @@ void main () {
     const vec3 color = vec3(
         diffuse + specular 
         + illuminate(ambientLight)
-        + illuminate(directionalLight, v.worldPosition, worldNormal, eyePos, 32));
+        // + illuminate(directionalLight, v.worldPosition, worldNormal, eyePos, 32)
+        + illuminate(hemisphericalLight, worldNormal)
+    );
     outColor = vec4(color, 1.0);
 
     // Data for deferred rendering

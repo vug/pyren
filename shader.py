@@ -3,8 +3,8 @@ import glm
 from OpenGL.GL import GL_FALSE
 from OpenGL.GL import GL_FRAGMENT_SHADER, GL_VERTEX_SHADER, glCompileShader, glCreateShader, glDeleteShader, glDetachShader, glGetShaderiv, glGetShaderInfoLog
 from OpenGL.GL import glGetUniformLocation, glUniform1i, glUniform1f, glUniform3fv, glUniformMatrix4fv
-from OpenGL.GL import GL_COMPILE_STATUS, GL_LINK_STATUS, glAttachShader, glCreateProgram, glGetProgramiv, glLinkProgram, glShaderSource, glUseProgram
-from OpenGL.GL import glShaderBinary, glSpecializeShader, GL_SHADER_BINARY_FORMAT_SPIR_V, glProgramUniformMatrix4fv
+from OpenGL.GL import GL_COMPILE_STATUS, GL_LINK_STATUS, glAttachShader, glCreateProgram, glGetProgramiv, glLinkProgram, glShaderSource, glUseProgram, GL_INFO_LOG_LENGTH
+from OpenGL.GL import glShaderBinary, glSpecializeShader, GL_SHADER_BINARY_FORMAT_SPIR_V, glProgramUniformMatrix4fv, glGetShaderSource
 import pyshaderc
 
 class Shader:
@@ -90,6 +90,7 @@ class Shader:
             print(glGetShaderInfoLog(vs).decode())
             glDeleteShader(vs)
             return -1
+        glGetShaderSource(vs)
 
         fs = glCreateShader(GL_FRAGMENT_SHADER)
         if self.use_spirv:        
@@ -106,18 +107,20 @@ class Shader:
             glDeleteShader(vs)
             glDeleteShader(fs)
             return -1
+        glGetShaderSource(fs)
 
         if self.is_valid():
-            glDetachShader(self.get_id(), self.get_vert_id());
-            glDetachShader(self.get_id(), self.get_frag_id());
+            glDetachShader(self.get_id(), self.get_vert_id())
+            glDetachShader(self.get_id(), self.get_frag_id())
 
         glAttachShader(self.get_id(), vs)
         glAttachShader(self.get_id(), fs)
         glLinkProgram(self.get_id())
         status = glGetProgramiv(self.get_id(), GL_LINK_STATUS)
         if status != 1:
-            print('status', status)
-            print('SHADER PROGRAM', glGetShaderInfoLog(self._id))
+            print(f"[ERR] Shader linking failed with status {status}")
+            glGetShaderiv(self.get_id(), GL_INFO_LOG_LENGTH)
+            print('SHADER PROGRAM', glGetShaderInfoLog(self.get_id()))
             glDeleteShader(vs)
             glDeleteShader(fs)
             return -1

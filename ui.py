@@ -52,6 +52,9 @@ def draw_inspector_window(scene, obj_combo):
     _, (scene.directional_light.direction.x, scene.directional_light.direction.y, scene.directional_light.direction.z) = imgui.drag_float3("Directional.Direction", *scene.directional_light.direction, change_speed=0.1)
     _, scene.directional_light.intensity = imgui.drag_float("Directional.Intensity", scene.directional_light.intensity, change_speed=0.1, min_value=0.0)
     _, (scene.directional_light.color.r, scene.directional_light.color.g, scene.directional_light.color.b) = imgui.color_edit3("Directional.Color", *scene.directional_light.color)
+    _, scene.hemispherical_light.intensity = imgui.drag_float("Hemispherical.Intensity", scene.hemispherical_light.intensity, change_speed=0.1, min_value=0.0)
+    _, (scene.hemispherical_light.north_color.r, scene.hemispherical_light.north_color.g, scene.hemispherical_light.north_color.b) = imgui.color_edit3("Hemispherical.NorthColor", *scene.hemispherical_light.north_color)
+    _, (scene.hemispherical_light.south_color.r, scene.hemispherical_light.south_color.g, scene.hemispherical_light.south_color.b) = imgui.color_edit3("Hemispherical.SouthColor", *scene.hemispherical_light.south_color)
     imgui.end()
     return has_clicked, is_open
 

@@ -17,6 +17,7 @@ from OpenGL.GL import GL_MAX_COLOR_ATTACHMENTS, GL_SHADING_LANGUAGE_VERSION, GL_
 from OpenGL.GL import GL_CULL_FACE, GL_DEPTH_TEST, glEnable
 from OpenGL.GL import GL_BACK, glCullFace
 from OpenGL.GL import GL_LESS, glDepthFunc
+from OpenGL.GL import GL_MAX_UNIFORM_LOCATIONS, GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, GL_MAX_FRAGMENT_UNIFORM_VECTORS, GL_MAX_FRAGMENT_UNIFORM_BLOCKS
 
 # TODO: renderer.make_default_framebuffer(colors=None, has_depth: bool, has_stencil: bool):
 # creates textures same size as window
@@ -27,17 +28,23 @@ class Renderer:
     def init(self, width=800, height=600):
         self._has_frame_begun = False
         glfw.init()  # without hints chooses v4.6 anyway
-        self.win_size = glm.ivec2(width, 600)
+        self.win_size = glm.ivec2(width, height)
         glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 4)
         glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 6)
         glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
+        # glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_COMPAT_PROFILE)
         # glfw.window_hint(glfw.SAMPLES, 4)
         # glfw.window_hint(glfw.OPENGL_DEBUG_CONTEXT, True)  # TODO: bring debug context
         self.window = glfw.create_window(self.win_size.x, self.win_size.y, "PyRen", None, None)
         # initialize openGL context before calling any gl functions such as `glGenVertexArrays`
         # otherwise it's expecting old API, or cumbersome workarounds such as https://github.com/tartley/gltutpy/blob/master/t01.hello-triangle/glwrap.py
         glfw.make_context_current(self.window)
-        print(f"OpenGL info: version {glGetString(GL_VERSION)}, renderer {glGetString(GL_RENDERER)}, GLSL version {glGetString(GL_SHADING_LANGUAGE_VERSION)}, max col attach {glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS)}")
+        print(f"OpenGL info: version {glGetString(GL_VERSION)}, renderer {glGetString(GL_RENDERER)}, GLSL version {glGetString(GL_SHADING_LANGUAGE_VERSION)}\n"
+              f"GL_MAX_COLOR_ATTACHMENTS {glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS)}\n"
+              f"GL_MAX_UNIFORM_LOCATIONS {glGetIntegerv(GL_MAX_UNIFORM_LOCATIONS)}\n"
+              f"GL_MAX_FRAGMENT_UNIFORM_COMPONENTS {glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS)}, GL_MAX_FRAGMENT_UNIFORM_VECTORS {glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_VECTORS)}\n"
+              f"GL_MAX_FRAGMENT_UNIFORM_BLOCKS {glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_BLOCKS)}\n"
+        )
 
         imgui.create_context()
         self.imgui_impl = GlfwRenderer(self.window)

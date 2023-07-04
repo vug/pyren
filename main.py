@@ -48,12 +48,11 @@ def main():
     assets.make_texture("mesh_id_colored", renderer.get_texdesc_3channel_8bit())
     fb = Framebuffer(
         color_textures=[assets.textures[name] for name in ["scene", "world_pos", "world_normal", "uv", "my_depth", "mesh_id", "mesh_id_colored"]],
-        depth_texture=Texture(renderer.get_texdesc_default_depth())
+        depth_texture=Texture(renderer.get_texdesc_default_depth())  # TODO: replace with has_depth, and has_stencil bools default to None
     )    
     
     scene = Scene(renderer)
     scene.clear_color = glm.vec3([0.1, 0.15, 0.2])
-    scene.ambient_light.color = glm.vec3([0.1, 0.025, 0.025])
     scene.ambient_light.color = glm.vec3(0, 0, 0)
     scene.directional_light.intensity = 0.4
     scene.directional_light.direction = glm.vec3([-2, -1, 0])
@@ -76,8 +75,6 @@ def main():
         shader=assets.shaders["default"]
     )
     
-    tex_combo = ui.ComboBox("Select Texture", list(assets.textures.values()), list(assets.textures.keys()))
-
     im_windows = ui.ImWindows(assets, scene)
 
     #globals().update(locals())
@@ -89,8 +86,6 @@ def main():
         glViewport(0, 0, renderer.win_size.x, renderer.win_size.y)
         
         im_windows.draw()
-        if (im_windows._showTextureViewerWindow):
-            _, im_windows._showTextureViewerWindow = ui.ImWindows.draw_texture_viewer_window(tex_combo)
           
         fb.bind()
         # TODO: scene has a clear method `clear(color=True, depth=True)`

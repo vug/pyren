@@ -38,6 +38,7 @@ class ImWindows:
         self._showTextureViewerWindow = True
         self._showInspectorWindow = True
         self._obj_combo = ComboBox("Select Object", list(self._scene.objects.values()), list(self._scene.objects.keys()), 0)
+        self._tex_combo = ComboBox("Select Texture", list(self._assets.textures.values()), list(self._assets.textures.keys()))
 
         # Camera state (maybe should be somewhere else, scene?)
         self.cam_r = 3
@@ -64,6 +65,8 @@ class ImWindows:
             _, self._showInspectorWindow = self.draw_inspector_window(self._scene, self._obj_combo)
         if (self._showAssetsWindow):
             _, self._showAssetsWindow = ImWindows.draw_assets_window(self._assets)
+        if (self._showTextureViewerWindow):
+            _, self._showTextureViewerWindow = ImWindows.draw_texture_viewer_window(self._tex_combo)
 
 
     def draw_inspector_window(self, scene, obj_combo):

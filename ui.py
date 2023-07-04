@@ -1,4 +1,5 @@
-from scene import Object
+from scene import Scene, Object
+from assets import Assets
 import utils
 
 import imgui
@@ -27,6 +28,37 @@ def transform_widget(obj: Object):
     obj.transform.rotation_yxz = glm.vec3(rotation)
     _, scale = imgui.slider_float3("scale", *obj.transform.scale, min_value=0.0, max_value=10.0, format="%.3f")
     obj.transform.scale = glm.vec3(scale)
+
+
+class ImWindows:
+    def __init__(self, assets: Assets, scene: Scene):
+        self._assets = assets
+        self._scene = scene
+        self._showAssetsWindow = False
+        self._showTextureViewerWindow = True
+        self._showInspectorWindow = True
+        self._obj_combo = ComboBox("Select Object", list(self._scene.objects.values()), list(self._scene.objects.keys()), 0)
+    
+    def draw(self):
+        if imgui.begin_main_menu_bar().opened:
+            if imgui.begin_menu('View', True).opened:
+                _, self._showAssetsWindow = imgui.core.menu_item("Assets", None, self._showAssetsWindow)
+                _, self._showTextureViewerWindow = imgui.core.menu_item("Texture Viewer", None, self._showTextureViewerWindow)
+                _, self._showInspectorWindow = imgui.core.menu_item("Inspector", None, self._showInspectorWindow)
+                imgui.end_menu()
+
+            if imgui.begin_menu('Actions', True).opened:
+                if imgui.button("reload shaders"):
+                    for shader in self._assets.shaders.values():
+                        shader.reload()
+                imgui.end_menu()
+
+            imgui.end_main_menu_bar()   
+       
+        if self._showInspectorWindow:
+            _, self._showInspectorWindow = draw_inspector_window(self._scene, self._obj_combo)
+        if (self._showAssetsWindow):
+            _, self._showAssetsWindow = draw_assets_window(self._assets)
 
 cam_r = 3
 cam_theta = math.pi / 3

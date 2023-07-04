@@ -77,13 +77,11 @@ def main():
         shader=assets.shaders["default"]
     )
     
-    obj_combo = ui.ComboBox("Select Object", list(scene.objects.values()), list(scene.objects.keys()), 0)
     tex_names = ["scene", "world_pos", "world_normal", "uv", "depth", "mesh_id", "mesh_id_colored"]
     assert(len(tex_names) == len(fb.color_textures))
     tex_combo = ui.ComboBox("Select Texture", fb.color_textures, tex_names)
-    showAssetsWindow = False
-    showTextureViewerWindow = True
-    showInspectorWindow = True
+
+    im_windows = ui.ImWindows(assets, scene)
 
     #globals().update(locals())
     
@@ -93,28 +91,10 @@ def main():
         scene.cam.aspect_ratio = renderer.win_size.x / renderer.win_size.y
         glViewport(0, 0, renderer.win_size.x, renderer.win_size.y)
         
-        if imgui.begin_main_menu_bar().opened:
-            if imgui.begin_menu('View', True).opened:
-                _, showAssetsWindow = imgui.core.menu_item("Assets", None, showAssetsWindow)
-                _, showTextureViewerWindow = imgui.core.menu_item("Texture Viewer", None, showTextureViewerWindow)
-                _, showInspectorWindow = imgui.core.menu_item("Inspector", None, showInspectorWindow)
-                imgui.end_menu()
-
-            if imgui.begin_menu('Actions', True).opened:
-                if imgui.button("reload shaders"):
-                    for shader in assets.shaders.values():
-                        shader.reload()
-                imgui.end_menu()
-
-            imgui.end_main_menu_bar()   
-       
-        if showInspectorWindow:
-            _, showInspectorWindow = ui.draw_inspector_window(scene, obj_combo)
-        if (showAssetsWindow):
-            _, showAssetsWindow = ui.draw_assets_window(assets)
-        if (showTextureViewerWindow):
-            _, showTextureViewerWindow = ui.draw_texture_viewer_window(tex_combo)              
-                      
+        im_windows.draw()
+        if (im_windows._showTextureViewerWindow):
+            _, im_windows._showTextureViewerWindow = ui.draw_texture_viewer_window(tex_combo)
+          
         fb.bind()
         # TODO: scene has a clear method `clear(color=True, depth=True)`
         # glClearColor(scene.clear_color.r, scene.clear_color.g, scene.clear_color.b, 1.0)

@@ -93,7 +93,7 @@ def main():
         
         im_windows.draw()
         if (im_windows._showTextureViewerWindow):
-            _, im_windows._showTextureViewerWindow = ui.draw_texture_viewer_window(tex_combo)
+            _, im_windows._showTextureViewerWindow = ui.ImWindows.draw_texture_viewer_window(tex_combo)
           
         fb.bind()
         # TODO: scene has a clear method `clear(color=True, depth=True)`

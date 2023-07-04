@@ -1,5 +1,6 @@
 #version 460 core
 // #extension GL_GOOGLE_include_directive : enable
+#extension GL_NV_fragment_shader_barycentric : require
 
 #include "lib/vertex_data.glsl"
 #include "lib/scene_uniforms.glsl"
@@ -8,12 +9,7 @@
 layout(location = 0) in VertexData v;
 
 #include "lib/AmbientLight.glsl"
-
-#include "lib/DirectionalLight.glsl"
-
 #include "lib/HemisphericalLight.glsl"
-
-#include "lib/PointLight.glsl"
 
 layout (location = 0) out vec4 outColor;
 layout (location = 1) out vec3 outWorldPos;
@@ -23,20 +19,22 @@ layout (location = 4) out float outDepth;
 layout (location = 5) out int outMeshId;
 layout (location = 6) out vec3 outMeshIdColored;
 
+float wireframe(vec3 vBC, float width) {
+  vec3 bary = vec3(vBC.x, vBC.y, vBC.z);
+  vec3 d = fwidth(bary);
+  vec3 a3 = smoothstep(d * (width - 0.5), d * (width + 0.5), bary);
+  return min(min(a3.x, a3.y), a3.z);
+}
+
 void main () {
     vec3 worldNormal = normalize(v.worldNormal);
-    const float specularCoef = 32.0;
+    HemisphericalLight hemi = HemisphericalLight(vec3(1, 1, 1), vec3(0), 1.0);
 
-    vec3 pointLight = vec3(0);
-    for (int i = 0; i < numPointLights; i++)
-      pointLight += illuminate(pointLights[i], v.worldPosition, worldNormal, eyePos, specularCoef);
-    const vec3 color = vec3(
-        illuminate(ambientLight)
-        + illuminate(directionalLight, v.worldPosition, worldNormal, eyePos, specularCoef)
-        + illuminate(hemisphericalLight, worldNormal)
-        + pointLight
+    vec3 color = vec3(
+        illuminate(hemi, worldNormal)
     );
-    outColor = vec4(color, 1.0);
+    float wire = 1 - wireframe(gl_BaryCoordNV.xyz, 1.0);
+    outColor = vec4(mix(color, vec3(0.2, 0.2, 0.2), wire), 1.0);
 
     // Data for deferred rendering
     outWorldPos = v.worldPosition;

@@ -32,18 +32,15 @@ void main () {
     vec3 worldNormal = texture(worldNormalTex, texCoord).rgb;
     vec2 uv = texture(uvTex, texCoord).rg;
 
-       
-    //outColor = vec4(fragColor, 1.0);
-    //outColor = vec4(texCoord.x, texCoord.y, 0, 1);
-    //outColor = vec4(worldPos, 1);    
-    vec3 pointLight = vec3(0);
+    vec3 pointLightIllumination = vec3(0);
     for (int i = 0; i < numPointLights; i++)
-      pointLight += illuminate(pointLights[i], worldPos, worldNormal, eyePos, specularCoef);
+      pointLightIllumination += illuminate(pointLights[i], worldPos, worldNormal, eyePos, specularCoef);
     vec3 color = vec3(
         illuminate(ambientLight)
         + illuminate(directionalLight, worldPos, worldNormal, eyePos, specularCoef)
         + illuminate(hemisphericalLight, worldNormal)
-        + pointLight
+        + pointLightIllumination
     );
     outColor = vec4(color, 1.0);
+    //outColor = vec4(texCoord.x, texCoord.y, 0, 1);    
 }

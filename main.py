@@ -93,7 +93,6 @@ def main():
         # glClearTexImage(fb.color_textures[0].get_id(), 0, fb.color_textures[0].desc.format, fb.color_textures[0].desc.type, glm.value_ptr(scene.clear_color))
         glClearColor(0, 0, 0, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        
         for _, obj in scene.objects.items():
             # TODO maybe: a scene.render_object() method (might take uniforms)
             obj.shader.bind()
@@ -134,7 +133,7 @@ def main():
         scene.directional_light.upload_to_shader(fullscreen_shader)
         scene.hemispherical_light.upload_to_shader(fullscreen_shader)
         for pl in scene.point_lights:
-            pl.upload_to_shader(obj.shader)        
+            pl.upload_to_shader(fullscreen_shader)        
         glBindVertexArray(renderer.empty_vao)
         glDrawArrays(GL_TRIANGLES, 0, 3)
         fullscreen_shader.unbind()      

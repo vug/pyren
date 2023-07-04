@@ -21,7 +21,7 @@ layout (location = 6) out vec3 outMeshIdColored;
 
 float wireframe(vec3 vBC, float width) {
   vec3 bary = vec3(vBC.x, vBC.y, vBC.z);
-  vec3 d = fwidth(bary);
+  vec3 d = vec3(fwidthFine(bary));
   vec3 a3 = smoothstep(d * (width - 0.5), d * (width + 0.5), bary);
   return min(min(a3.x, a3.y), a3.z);
 }
@@ -33,7 +33,7 @@ void main () {
     vec3 color = vec3(
         illuminate(hemi, worldNormal)
     );
-    float wire = 1 - wireframe(gl_BaryCoordNV.xyz, 1.0);
+    const float wire = 1 - wireframe(gl_BaryCoordNV.xyz, 1.0);
     outColor = vec4(mix(color, vec3(0.2, 0.2, 0.2), wire), 1.0);
 
     // Data for deferred rendering

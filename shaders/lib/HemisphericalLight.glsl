@@ -1,5 +1,3 @@
-#include "common.glsl"
-
 struct HemisphericalLight {
   vec3 northColor;
   vec3 southColor;

@@ -3,13 +3,11 @@ layout (location = 0) in vec3 fragColor;
 layout (location = 1) in vec2 texCoords;
 
 #include "lib/scene_uniforms.glsl"
+#include "lib/common.glsl"
 
 #include "lib/AmbientLight.glsl"
-
 #include "lib/DirectionalLight.glsl"
-
 #include "lib/HemisphericalLight.glsl"
-
 #include "lib/PointLight.glsl"
 
 layout (binding = 0) uniform sampler2D sceneRenderTex;

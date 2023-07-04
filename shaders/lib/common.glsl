@@ -1,6 +1,3 @@
-#ifndef COMMON_GLSL
-#define COMMON_GLSL
-
 vec3 colorFromIndex(uint index) {
   uint a = (index & (1 << 0)) != 0 ? 1 : 0;
   uint d = (index & (1 << 1)) != 0 ? 1 : 0;
@@ -20,5 +17,3 @@ vec3 colorFromIndex(uint index) {
 float map(float value, float min1, float max1, float min2, float max2) {
   return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
 }
-
-#endif

@@ -84,62 +84,62 @@ class Renderer:
         glfw.swap_buffers(self.window)
         self._has_frame_begun = False
 
-    def make_default_color_tex(self):
-        return self.make_tex_three_channel_8bit()
+    def get_texdesc_default_color(self) -> TextureDescription:
+        return self.get_texdesc_3channel_8bit()
 
-    def make_default_depth_tex(self):
-        return self.make_tex_depth32()
+    def get_texdesc_default_depth(self) -> TextureDescription:
+        return self.get_texdesc_depth32()
 
-    def make_tex_3channel_8bit(self):
+    def get_texdesc_3channel_8bit(self) -> TextureDescription:
         desc = TextureDescription(
             width=self.win_size.x, height=self.win_size.y,
             internal_format=GL_RGB8,
             format=GL_RGB,
             type=GL_UNSIGNED_BYTE,
         )
-        return Texture(desc)
+        return desc
 
-    def make_tex_3channel_flt32(self):
+    def get_texdesc_3channel_flt32(self) -> TextureDescription:
         desc = TextureDescription(
             width=self.win_size.x, height=self.win_size.y,
             internal_format=GL_RGB32F,
             format=GL_RGB,
             type=GL_FLOAT,
         )
-        return Texture(desc)
+        return desc
 
-    def make_tex_2channel_flt32(self):
+    def get_texdesc_2channel_flt32(self) -> TextureDescription:
         desc = TextureDescription(
             width=self.win_size.x, height=self.win_size.y,
             internal_format=GL_RG32F,
             format=GL_RG,
             type=GL_FLOAT,
         )
-        return Texture(desc)
+        return desc
     
-    def make_tex_1channel_flt32(self):
+    def get_texdesc_1channel_flt32(self) -> TextureDescription:
         desc = TextureDescription(
             width=self.win_size.x, height=self.win_size.y,
             internal_format=GL_R32F,
             format=GL_RED,
             type=GL_FLOAT,
         )
-        return Texture(desc)        
+        return desc
 
-    def make_tex_1channel_int32(self):
+    def get_texdesc_1channel_int32(self) -> TextureDescription:
         desc = TextureDescription(
             width=self.win_size.x, height=self.win_size.y,
             internal_format=GL_R32I,
             format=GL_RED_INTEGER,
             type=GL_INT,
         )
-        return Texture(desc)
+        return desc
 
-    def make_tex_depth32(self):
+    def get_texdesc_depth32(self) -> TextureDescription:
         desc = TextureDescription(
             width=self.win_size.x, height=self.win_size.y,
             internal_format=GL_DEPTH_COMPONENT32,
             format=GL_DEPTH_COMPONENT,
             type=GL_FLOAT
         )
-        return Texture(desc)
+        return desc

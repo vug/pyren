@@ -1,5 +1,6 @@
 from mesh import Mesh
 from shader import Shader
+from texture import TextureDescription, Texture
 
 import numpy as np
 import pywavefront
@@ -9,6 +10,7 @@ class Assets:
     def __init__(self, renderer):
         self.meshes: dict[str, Mesh] = {}
         self.shaders: dict[str, Shader] = {}
+        self.textures: dict[str, Texture] = {}
         self._renderer = renderer
     
     def load_obj(self, asset_name: str, filename: str):
@@ -59,3 +61,7 @@ class Assets:
     def load_shader(self, asset_name: str, vert_file: str, frag_file: str):
         shader = Shader(vert_file, frag_file)
         self.shaders[asset_name] = shader
+    
+    def make_texture(self, asset_name: str, tex_desc: TextureDescription):
+        texture = Texture(tex_desc)
+        self.textures[asset_name] = texture

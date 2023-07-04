@@ -13,11 +13,11 @@ from framebuffer import Framebuffer
 from lights import PointLight
 import renderer as rndr
 from scene import Scene, Object
+from texture import Texture
 import ui
 import utils
 
 import glm
-import imgui
 from OpenGL.GL import (
     GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, glClear, glClearColor,
     GL_TRIANGLES, glBindVertexArray, glDrawArrays,
@@ -38,18 +38,17 @@ def main():
     assets.load_obj("quad", "models/quad.obj")
     assets.load_obj("sphere", "models/sphere.obj")
     assets.load_shader("default", "shaders/default.vert", "shaders/default.frag")
-    assets.load_shader("fullscreen", "shaders/fullscreen_quad.vert", "shaders/fullscreen_quad.frag")    
-
-    scene_tex = renderer.make_tex_3channel_8bit()
-    world_pos_tex = renderer.make_tex_3channel_flt32()
-    world_normal_tex = renderer.make_tex_3channel_flt32()
-    uv_tex = renderer.make_tex_2channel_flt32()
-    mesh_id_tex = renderer.make_tex_1channel_int32()
-    mesh_id_colored_tex = renderer.make_tex_3channel_8bit()
-    my_depth_tex = renderer.make_tex_1channel_flt32()  # actually a color attachment
+    assets.load_shader("fullscreen", "shaders/fullscreen_quad.vert", "shaders/fullscreen_quad.frag")
+    assets.make_texture("scene", renderer.get_texdesc_3channel_8bit())
+    assets.make_texture("world_pos", renderer.get_texdesc_3channel_flt32())
+    assets.make_texture("world_normal", renderer.get_texdesc_3channel_flt32())
+    assets.make_texture("uv", renderer.get_texdesc_2channel_flt32())
+    assets.make_texture("my_depth", renderer.get_texdesc_1channel_flt32())  # actually a color attachment
+    assets.make_texture("mesh_id", renderer.get_texdesc_1channel_int32())
+    assets.make_texture("mesh_id_colored", renderer.get_texdesc_3channel_8bit())
     fb = Framebuffer(
-        color_textures=[scene_tex, world_pos_tex, world_normal_tex, uv_tex, my_depth_tex, mesh_id_tex, mesh_id_colored_tex], 
-        depth_texture=renderer.make_default_depth_tex()
+        color_textures=[assets.textures[name] for name in ["scene", "world_pos", "world_normal", "uv", "my_depth", "mesh_id", "mesh_id_colored"]],
+        depth_texture=Texture(renderer.get_texdesc_default_depth())
     )    
     
     scene = Scene(renderer)
@@ -77,9 +76,7 @@ def main():
         shader=assets.shaders["default"]
     )
     
-    tex_names = ["scene", "world_pos", "world_normal", "uv", "depth", "mesh_id", "mesh_id_colored"]
-    assert(len(tex_names) == len(fb.color_textures))
-    tex_combo = ui.ComboBox("Select Texture", fb.color_textures, tex_names)
+    tex_combo = ui.ComboBox("Select Texture", list(assets.textures.values()), list(assets.textures.keys()))
 
     im_windows = ui.ImWindows(assets, scene)
 
@@ -122,15 +119,15 @@ def main():
         fb.unbind()
 
         glActiveTexture(GL_TEXTURE0 + 0)
-        scene_tex.bind()
+        assets.textures["scene"].bind()
         glActiveTexture(GL_TEXTURE0 + 1)
-        world_pos_tex.bind()
+        assets.textures["world_pos"].bind()
         glActiveTexture(GL_TEXTURE0 + 2)
-        world_normal_tex.bind()
+        assets.textures["world_normal"].bind()
         glActiveTexture(GL_TEXTURE0 + 3)
-        uv_tex.bind()
+        assets.textures["uv"].bind()
         glActiveTexture(GL_TEXTURE0 + 4)
-        mesh_id_tex.bind()
+        assets.textures["mesh_id"].bind()
         
         # Clear editor background
         glClearColor(scene.clear_color.r, scene.clear_color.g, scene.clear_color.b, 1)

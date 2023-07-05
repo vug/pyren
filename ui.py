@@ -4,6 +4,7 @@ import utils
 
 import imgui
 import glm
+from testwindow import show_test_window
 
 import math
 
@@ -37,6 +38,7 @@ class ImWindows:
         self._showAssetsWindow = False
         self._showTextureViewerWindow = True
         self._showInspectorWindow = True
+        self._showImGuiDemoWindow = False
         self._obj_combo = ComboBox("Select Object", list(self._scene.objects.values()), list(self._scene.objects.keys()), 0)
         self._tex_combo = ComboBox("Select Texture", list(self._assets.textures.values()), list(self._assets.textures.keys()))
 
@@ -51,6 +53,7 @@ class ImWindows:
                 _, self._showAssetsWindow = imgui.core.menu_item("Assets", None, self._showAssetsWindow)
                 _, self._showTextureViewerWindow = imgui.core.menu_item("Texture Viewer", None, self._showTextureViewerWindow)
                 _, self._showInspectorWindow = imgui.core.menu_item("Inspector", None, self._showInspectorWindow)
+                _, self._showImGuiDemoWindow = imgui.core.menu_item("ImGui Demo Window", None, self._showImGuiDemoWindow)
                 imgui.end_menu()
 
             if imgui.begin_menu('Actions', True).opened:
@@ -67,6 +70,9 @@ class ImWindows:
             _, self._showAssetsWindow = ImWindows.draw_assets_window(self._assets)
         if (self._showTextureViewerWindow):
             _, self._showTextureViewerWindow = ImWindows.draw_texture_viewer_window(self._tex_combo)
+        if (self._showImGuiDemoWindow):
+            show_test_window()
+
 
 
     def draw_inspector_window(self, scene, obj_combo):

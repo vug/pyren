@@ -81,18 +81,8 @@ class ImWindows:
     def draw_viewport_window(self, viewport_tex):
         imgui.push_style_var(imgui.STYLE_WINDOW_PADDING, imgui.Vec2(0.0, 0.0))
         has_clicked, is_open = imgui.begin("Viewport", False, imgui.WINDOW_NO_SCROLLBAR)
-        # TODO: shouldn't need thisl logic. Texture and Viewport should have the same size
-        available_sz = imgui.get_content_region_available()
-        self.viewport_size = glm.ivec2(available_sz.x, available_sz.y)
-        win_ar = available_sz.x / available_sz.y
-        tex_ar = viewport_tex.desc.width / viewport_tex.desc.height
-        w, h = 1, 1
-        if tex_ar >= win_ar:
-            w = available_sz.x
-            h = w / tex_ar
-        else:
-            h = available_sz.y
-            w = h * tex_ar
+        w, h = imgui.get_content_region_available()
+        self.viewport_size = glm.ivec2(w, h)
         imgui.image(viewport_tex.get_id(), w, h, uv0=(0, 1), uv1=(1, 0), border_color=(1,1,0,1))
         imgui.end()
         imgui.pop_style_var(1)

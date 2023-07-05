@@ -50,16 +50,16 @@ def main():
     assets.make_texture("viewport", renderer.get_texdesc_3channel_8bit())
     fb_gbuffer = Framebuffer(
         color_textures=[assets.textures[name] for name in ["scene", "world_pos", "world_normal", "uv", "my_depth", "mesh_id", "mesh_id_colored"]],
-        depth_texture=Texture(renderer.get_texdesc_default_depth())  # TODO: replace with has_depth, and has_stencil bools default to None
+        depth_texture=Texture(renderer.get_texdesc_default_depth())  # TODO: replace with has_depth, and has_stencil bools default to False
     )
     fb_viewport = Framebuffer([assets.textures["viewport"]])
     
     scene = Scene(renderer)
-    scene.clear_color = glm.vec3([0.1, 0.15, 0.2])
+    scene.clear_color = glm.vec3(0.1, 0.15, 0.2)
     scene.ambient_light.color = glm.vec3(0, 0, 0)
     scene.directional_light.intensity = 0.4
-    scene.directional_light.direction = glm.vec3([-2, -1, 0])
-    scene.directional_light.color = glm.vec3([165, 218, 55]) / 255
+    scene.directional_light.direction = glm.vec3(-2, -1, 0)
+    scene.directional_light.color = glm.vec3(165, 218, 55) / 255
     scene.hemispherical_light.intensity = 0.3
     scene.point_lights.append(PointLight(color=glm.vec3(1, 0, 0)))
     scene.objects["suzanne"] = Object(
@@ -84,7 +84,7 @@ def main():
     
     while renderer.is_running():
         renderer.begin_frame(viewport_size=im_windows.viewport_size, fbos=[fb_gbuffer, fb_viewport], cam=scene.cam)
-        im_windows.draw()
+        im_windows.draw()  # TODO: separate renderer and ui. Call ui.begin_frame() before renderer.begin_frame() so that renderer gets viewport_size at the same frame, not a frame late
 
         glClearColor(0.1, 0.2, 0.3, 1)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)        

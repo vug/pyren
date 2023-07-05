@@ -85,7 +85,7 @@ class Renderer:
         (w, h) = glfw.get_window_size(self.window)
         self.win_size = glm.ivec2(w, h)
         self.imgui_impl.process_inputs()
-        imgui.new_frame()  # remove CONFIG_VIEWPORTS_ENABLE from imgui.get_io().config_flags
+        imgui.new_frame()  # removes CONFIG_VIEWPORTS_ENABLE from imgui.get_io().config_flags
         utils.imgui_dockspace_over_viewport()
         for fb in fbos:
             fb.resize_if_needed(self.viewport_size.x, self.viewport_size.y)

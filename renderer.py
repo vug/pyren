@@ -1,4 +1,6 @@
+from camera import Camera
 from texture import TextureDescription
+from framebuffer import Framebuffer
 import utils
 
 import glfw
@@ -18,10 +20,8 @@ from OpenGL.GL import GL_CULL_FACE, GL_DEPTH_TEST, glEnable
 from OpenGL.GL import GL_BACK, glCullFace
 from OpenGL.GL import GL_LESS, glDepthFunc
 from OpenGL.GL import GL_MAX_UNIFORM_LOCATIONS, GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, GL_MAX_FRAGMENT_UNIFORM_VECTORS, GL_MAX_FRAGMENT_UNIFORM_BLOCKS
-
-# TODO: renderer.make_default_framebuffer(colors=None, has_depth: bool, has_stencil: bool):
-# creates textures same size as window
-# if colors is None, one color attachment of screensize with RGBA8
+#
+from OpenGL.GL import glViewport
 
 
 class Renderer:
@@ -74,16 +74,25 @@ class Renderer:
     def is_running(self):
         return not glfw.window_should_close(self.window)
 
-    def begin_frame(self, viewport_size: glm.ivec2):
+    def begin_frame(self, viewport_size: glm.ivec2, fbos: list[Framebuffer], cam: Camera):
+        """
+        viewport_size: ivec2 size of the "Viewport" ImWindow in which the final render is displayed
+        fbos: Framebuffers registered to the renderer that'll be resized to the given viewport_size
+        cam: Camera whose aspect ratio will be updated according to viewport aspect ratio
+        """        
+        self.viewport_size = viewport_size
         glfw.poll_events()
         (w, h) = glfw.get_window_size(self.window)
-        self.win_size.x = w
-        self.win_size.y = h
+        self.win_size = glm.ivec2(w, h)
         self.imgui_impl.process_inputs()
         imgui.new_frame()  # remove CONFIG_VIEWPORTS_ENABLE from imgui.get_io().config_flags
-        self._has_frame_begun = True
         utils.imgui_dockspace_over_viewport()
-        self.viewport_size = viewport_size
+        for fb in fbos:
+            fb.resize_if_needed(self.viewport_size.x, self.viewport_size.y)
+        cam.aspect_ratio = self.viewport_size.x / self.viewport_size.y
+        glViewport(0, 0, self.viewport_size.x, self.viewport_size.y)
+        self._has_frame_begun = True
+
 
     def end_frame(self):
         imgui.render()

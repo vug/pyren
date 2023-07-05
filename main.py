@@ -1,7 +1,6 @@
 """
 TODO:
 * Add multiple point lights https://learnopengl.com/Advanced-Lighting/Deferred-Shading, https://ogldev.org/www/tutorial36/tutorial36.html
-* BLIT selected texture into default framebuffer, instead of visualizing it in a separate ImGui window
 
 REF:
 * pyopengl example: https://gist.github.com/vug/2c7953d5fdf750c727af249ded3e9018
@@ -11,7 +10,7 @@ REF:
 from assets import Assets
 from framebuffer import Framebuffer
 from lights import PointLight
-import renderer as rndr
+from renderer import Renderer
 from scene import Scene, Object
 from texture import Texture
 import ui
@@ -21,12 +20,13 @@ import glm
 from OpenGL.GL import (
     GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, glClear, glClearColor,
     GL_TRIANGLES, glBindVertexArray, glDrawArrays,
-    glActiveTexture, GL_TEXTURE0, glViewport
+    glActiveTexture, GL_TEXTURE0
 )
 
 import traceback
 
-renderer = rndr.Renderer()
+renderer = Renderer()
+
 
 def main():
     initial_viewport_size = utils.read_window_size_from_imgui_ini("Viewport")
@@ -48,7 +48,7 @@ def main():
     assets.make_texture("mesh_id", renderer.get_texdesc_1channel_int32())
     assets.make_texture("mesh_id_colored", renderer.get_texdesc_3channel_8bit())
     assets.make_texture("viewport", renderer.get_texdesc_3channel_8bit())
-    fb = Framebuffer(
+    fb_gbuffer = Framebuffer(
         color_textures=[assets.textures[name] for name in ["scene", "world_pos", "world_normal", "uv", "my_depth", "mesh_id", "mesh_id_colored"]],
         depth_texture=Texture(renderer.get_texdesc_default_depth())  # TODO: replace with has_depth, and has_stencil bools default to None
     )
@@ -83,21 +83,14 @@ def main():
     #globals().update(locals())
     
     while renderer.is_running():
-        size = im_windows.viewport_size
-        renderer.begin_frame(size)
-        fb.resize_if_needed(size.x, size.y)
-        fb_viewport.resize_if_needed(size.x, size.y)
-        scene.cam.aspect_ratio = size.x / size.y
-        glViewport(0, 0, size.x, size.y)        
+        renderer.begin_frame(viewport_size=im_windows.viewport_size, fbos=[fb_gbuffer, fb_viewport], cam=scene.cam)
         im_windows.draw()
 
         glClearColor(0.1, 0.2, 0.3, 1)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)        
           
-        fb.bind()
-        # TODO: scene has a clear method `clear(color=True, depth=True)`
-        # glClearColor(scene.clear_color.r, scene.clear_color.g, scene.clear_color.b, 1.0)
-        # glClearTexImage(fb.color_textures[0].get_id(), 0, fb.color_textures[0].desc.format, fb.color_textures[0].desc.type, glm.value_ptr(scene.clear_color))
+        fb_gbuffer.bind()
+        # TODO: figure out how to clear scene tex differently then the rest of the color attachments        
         glClearColor(0, 0, 0, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         for _, obj in scene.objects.items():
@@ -117,8 +110,12 @@ def main():
             glDrawArrays(GL_TRIANGLES, 0, obj.mesh.vertex_count)
             glBindVertexArray(0)
             obj.shader.unbind()
-        fb.unbind()
+        fb_gbuffer.unbind()
 
+
+        fb_viewport.bind()
+        glClearColor(scene.clear_color.r, scene.clear_color.g, scene.clear_color.b, 1)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glActiveTexture(GL_TEXTURE0 + 0)
         assets.textures["scene"].bind()
         glActiveTexture(GL_TEXTURE0 + 1)
@@ -128,12 +125,7 @@ def main():
         glActiveTexture(GL_TEXTURE0 + 3)
         assets.textures["uv"].bind()
         glActiveTexture(GL_TEXTURE0 + 4)
-        assets.textures["mesh_id"].bind()
-        
-        # Clear editor background
-        fb_viewport.bind()
-        glClearColor(scene.clear_color.r, scene.clear_color.g, scene.clear_color.b, 1)
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        assets.textures["mesh_id"].bind()        
         fullscreen_shader = assets.shaders["fullscreen"]
         fullscreen_shader.bind()
         fullscreen_shader.set_uniform_vec3("eyePos", scene.cam.position)

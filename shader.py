@@ -41,13 +41,14 @@ class Shader:
     def reload(self):
         if not self.use_spirv:
             self.__load()
-        self.__compile()
+        return self.__compile()
 
     def is_valid(self):
         return glGetProgramiv(self._id, GL_LINK_STATUS)
 
     def bind(self):
-        assert(self.is_valid())
+        # usually triggered when shader already has errors before app start
+        assert self.is_valid(), f"Shader ({self.vertex_file}, {self.fragment_file}) is not valid."
         glUseProgram(self._id)
 
     def unbind(self):
@@ -74,40 +75,42 @@ class Shader:
             self._vert_src = file.read()
         with open(self.fragment_file, 'r') as file:
             self._frag_src = file.read()
+    
+    def __compile_file_into_spirv(self, shader_id, filepath, stage):
+        try:
+            spirv_bytes = pyshaderc.compile_file_into_spirv(filepath, stage, optimization='zero')
+            glShaderBinary(1, shader_id, GL_SHADER_BINARY_FORMAT_SPIR_V, spirv_bytes, len(spirv_bytes))
+            glSpecializeShader(shader_id, 'main', 0, None, None)
+        except pyshaderc.CompilationError as ce:
+            print("[ERROR] ShaderC SPIRV Compilation Error: ", str(ce))
 
     def __compile(self):
         vs = glCreateShader(GL_VERTEX_SHADER)
         if self.use_spirv:
-            spirv_bytesVS = pyshaderc.compile_file_into_spirv(self.vertex_file, 'vert', optimization='zero')
-            glShaderBinary(1, vs, GL_SHADER_BINARY_FORMAT_SPIR_V, spirv_bytesVS, len(spirv_bytesVS))
-            glSpecializeShader(vs, 'main', 0, None, None)
+            self.__compile_file_into_spirv(vs, self.vertex_file, 'vert')
         else:
             glShaderSource(vs, [self._vert_src], None)  # TODO: try non-array
             glCompileShader(vs)
         status = glGetShaderiv(vs, GL_COMPILE_STATUS)
         if status != 1:
-            print('[ERROR] Vertex shader compilation with status {status}')
-            print(glGetShaderInfoLog(vs).decode())
+            print(f"[ERROR] Vertex shader compilation with status {status}")
+            print(glGetShaderInfoLog(vs))
             glDeleteShader(vs)
             return -1
-        glGetShaderSource(vs)
 
         fs = glCreateShader(GL_FRAGMENT_SHADER)
-        if self.use_spirv:        
-            spirv_bytes = pyshaderc.compile_file_into_spirv(self.fragment_file, 'frag', optimization='zero')
-            glShaderBinary(1, fs, GL_SHADER_BINARY_FORMAT_SPIR_V, spirv_bytes, len(spirv_bytes))
-            glSpecializeShader(fs, 'main', 0, None, None)
+        if self.use_spirv:
+            self.__compile_file_into_spirv(fs, self.fragment_file, 'frag')
         else:
             glShaderSource(fs, [self._frag_src], None)
             glCompileShader(fs)
         status = glGetShaderiv(fs, GL_COMPILE_STATUS)
         if status != 1:
-            print('[ERROR] Fragment shader compilation with status {status}')
-            print(glGetShaderInfoLog(fs).decode())
+            print(f"[ERROR] Fragment shader compilation with status {status}")
+            print(glGetShaderInfoLog(fs))
             glDeleteShader(vs)
             glDeleteShader(fs)
             return -1
-        glGetShaderSource(fs)
 
         if self.is_valid():
             glDetachShader(self.get_id(), self.get_vert_id())
@@ -119,7 +122,7 @@ class Shader:
         status = glGetProgramiv(self.get_id(), GL_LINK_STATUS)
         if status != 1:
             print(f"[ERROR] Shader linking failed with status {status}")
-            print(glGetProgramInfoLog(self.get_id()).decode())
+            print(glGetProgramInfoLog(self.get_id()))
             glDeleteShader(vs)
             glDeleteShader(fs)
             return -1

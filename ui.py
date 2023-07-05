@@ -60,8 +60,10 @@ class ImWindows:
 
             if imgui.begin_menu('Actions', True).opened:
                 if imgui.button("reload shaders"):
-                    for shader in self._assets.shaders.values():
-                        shader.reload()
+                    for name, shader in self._assets.shaders.items():
+                        result = shader.reload()
+                        if result != -1:
+                            print(f"Shader '{name}' reloaded successfully.")
                 imgui.end_menu()
 
             imgui.end_main_menu_bar()   

@@ -4,7 +4,6 @@ import utils
 
 import imgui
 import glm
-from testwindow import show_test_window
 
 import math
 
@@ -32,15 +31,17 @@ def transform_widget(obj: Object):
 
 
 class ImWindows:
-    def __init__(self, assets: Assets, scene: Scene):
+    def __init__(self, assets: Assets, scene: Scene, viewport_size: glm.ivec2):
         self._assets = assets
         self._scene = scene
-        self._show_assets_window = False
+        self._show_assets_window = True
         self._show_texture_viewer_window = True
         self._show_inspector_window = True
         self._show_imgui_demo_window = False
+        self._show_viewport_window = True
         self._obj_combo = ComboBox("Select Object", list(self._scene.objects.values()), list(self._scene.objects.keys()), 0)
         self._tex_combo = ComboBox("Select Texture", list(self._assets.textures.values()), list(self._assets.textures.keys()))
+        self.viewport_size = viewport_size
 
         # Camera state (maybe should be somewhere else, scene?)
         self.cam_r = 3
@@ -54,6 +55,7 @@ class ImWindows:
                 _, self._show_texture_viewer_window = imgui.core.menu_item("Texture Viewer", None, self._show_texture_viewer_window)
                 _, self._show_inspector_window = imgui.core.menu_item("Inspector", None, self._show_inspector_window)
                 _, self._show_imgui_demo_window = imgui.core.menu_item("ImGui Demo Window", None, self._show_imgui_demo_window)
+                # _, self._show_viewport_window = imgui.core.menu_item("Viewport Window", None, self._show_viewport_window)
                 imgui.end_menu()
 
             if imgui.begin_menu('Actions', True).opened:
@@ -71,8 +73,30 @@ class ImWindows:
         if (self._show_texture_viewer_window):
             _, self._show_texture_viewer_window = ImWindows.draw_texture_viewer_window(self._tex_combo)
         if (self._show_imgui_demo_window):
-            show_test_window()
+            imgui.show_demo_window()
+        if (self._show_viewport_window):
+            _, self._show_viewport_window = self.draw_viewport_window(self._assets.textures["viewport"])
 
+
+    def draw_viewport_window(self, viewport_tex):
+        imgui.push_style_var(imgui.STYLE_WINDOW_PADDING, imgui.Vec2(0.0, 0.0))
+        has_clicked, is_open = imgui.begin("Viewport", False, imgui.WINDOW_NO_SCROLLBAR)
+        # TODO: shouldn't need thisl logic. Texture and Viewport should have the same size
+        available_sz = imgui.get_content_region_available()
+        self.viewport_size = glm.ivec2(available_sz.x, available_sz.y)
+        win_ar = available_sz.x / available_sz.y
+        tex_ar = viewport_tex.desc.width / viewport_tex.desc.height
+        w, h = 1, 1
+        if tex_ar >= win_ar:
+            w = available_sz.x
+            h = w / tex_ar
+        else:
+            h = available_sz.y
+            w = h * tex_ar
+        imgui.image(viewport_tex.get_id(), w, h, uv0=(0, 1), uv1=(1, 0), border_color=(1,1,0,1))
+        imgui.end()
+        imgui.pop_style_var(1)
+        return has_clicked, is_open
 
 
     def draw_inspector_window(self, scene, obj_combo):
@@ -122,7 +146,6 @@ class ImWindows:
             _, _, viz_tex = tex_combo.draw()
             imgui.separator()
             available_sz = imgui.get_content_region_available()
-            imgui.core.get_content_region_available_width()
             win_ar = available_sz.x / available_sz.y
             tex_ar = viz_tex.desc.width / viz_tex.desc.height
             w, h = 1, 1

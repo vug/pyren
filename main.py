@@ -28,8 +28,9 @@ import traceback
 
 renderer = rndr.Renderer()
 
-def main():   
-    renderer.init(1024, 768)
+def main():
+    initial_viewport_size = utils.read_window_size_from_imgui_ini("Viewport")
+    renderer.init(win_size=glm.ivec2(1024, 768), viewport_size=initial_viewport_size)
 
     assets = Assets(renderer)
     assets.load_obj("monkey", "models/suzanne_smooth.obj")
@@ -46,10 +47,12 @@ def main():
     assets.make_texture("my_depth", renderer.get_texdesc_1channel_flt32())  # actually a color attachment
     assets.make_texture("mesh_id", renderer.get_texdesc_1channel_int32())
     assets.make_texture("mesh_id_colored", renderer.get_texdesc_3channel_8bit())
+    assets.make_texture("viewport", renderer.get_texdesc_3channel_8bit())
     fb = Framebuffer(
         color_textures=[assets.textures[name] for name in ["scene", "world_pos", "world_normal", "uv", "my_depth", "mesh_id", "mesh_id_colored"]],
         depth_texture=Texture(renderer.get_texdesc_default_depth())  # TODO: replace with has_depth, and has_stencil bools default to None
-    )    
+    )
+    fb_viewport = Framebuffer([assets.textures["viewport"]])
     
     scene = Scene(renderer)
     scene.clear_color = glm.vec3([0.1, 0.15, 0.2])
@@ -75,17 +78,21 @@ def main():
         shader=assets.shaders["default"]
     )
     
-    im_windows = ui.ImWindows(assets, scene)
+    im_windows = ui.ImWindows(assets, scene, viewport_size=initial_viewport_size)
 
     #globals().update(locals())
     
     while renderer.is_running():
-        renderer.begin_frame()
-        fb.resize_if_needed(renderer.win_size.x, renderer.win_size.y)
-        scene.cam.aspect_ratio = renderer.win_size.x / renderer.win_size.y
-        glViewport(0, 0, renderer.win_size.x, renderer.win_size.y)
-        
+        size = im_windows.viewport_size
+        renderer.begin_frame(size)
+        fb.resize_if_needed(size.x, size.y)
+        fb_viewport.resize_if_needed(size.x, size.y)
+        scene.cam.aspect_ratio = size.x / size.y
+        glViewport(0, 0, size.x, size.y)        
         im_windows.draw()
+
+        glClearColor(0.1, 0.2, 0.3, 1)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)        
           
         fb.bind()
         # TODO: scene has a clear method `clear(color=True, depth=True)`
@@ -124,6 +131,7 @@ def main():
         assets.textures["mesh_id"].bind()
         
         # Clear editor background
+        fb_viewport.bind()
         glClearColor(scene.clear_color.r, scene.clear_color.g, scene.clear_color.b, 1)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         fullscreen_shader = assets.shaders["fullscreen"]
@@ -136,7 +144,8 @@ def main():
             pl.upload_to_shader(fullscreen_shader)        
         glBindVertexArray(renderer.empty_vao)
         glDrawArrays(GL_TRIANGLES, 0, 3)
-        fullscreen_shader.unbind()      
+        fullscreen_shader.unbind()
+        fb_viewport.unbind()
     
         renderer.end_frame()
         

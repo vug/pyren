@@ -1,3 +1,5 @@
+from configparser import ConfigParser
+
 import glm
 import imgui
 import math
@@ -59,4 +61,22 @@ def imgui_dockspace_over_viewport():
     dockspace_id = imgui.get_id("DockSpace")
     imgui.dockspace(dockspace_id, (0.0, 0.0), dockspace_flags)
     # imgui.dockspace(dockspace_id, imgui.Vec2(0.0, 0.0), dockspace_flags, window_class)
-    imgui.end() 
+    imgui.end()
+
+"""
+Call after initializing ImGui
+"""
+def read_window_size_from_imgui_ini(win_name: str):
+    config = ConfigParser()
+    config.read("imgui.ini")
+    sections = config.sections()
+    key = f"Window][{win_name}"
+    if key in sections:
+        viewport = config[key]
+        width, height = [int(s) for s in viewport["size"].split(',')]
+        return glm.ivec2(width, height)
+    else:
+        # path taken if running the app first time?
+        return glm.ivec2(128, 128)
+    
+    

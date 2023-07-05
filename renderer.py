@@ -1,5 +1,5 @@
 from texture import TextureDescription
-from utils import imgui_dockspace_over_viewport
+import utils
 
 import glfw
 import glm
@@ -25,10 +25,11 @@ from OpenGL.GL import GL_MAX_UNIFORM_LOCATIONS, GL_MAX_FRAGMENT_UNIFORM_COMPONEN
 
 
 class Renderer:
-    def init(self, width=800, height=600):
+    def init(self, win_size: glm.ivec2, viewport_size: glm.ivec2):
+        self.win_size = win_size
+        self.viewport_size = viewport_size
         self._has_frame_begun = False
         glfw.init()  # without hints chooses v4.6 anyway
-        self.win_size = glm.ivec2(width, height)
         glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 4)
         glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 6)
         glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
@@ -73,7 +74,7 @@ class Renderer:
     def is_running(self):
         return not glfw.window_should_close(self.window)
 
-    def begin_frame(self):
+    def begin_frame(self, viewport_size: glm.ivec2):
         glfw.poll_events()
         (w, h) = glfw.get_window_size(self.window)
         self.win_size.x = w
@@ -81,7 +82,8 @@ class Renderer:
         self.imgui_impl.process_inputs()
         imgui.new_frame()  # remove CONFIG_VIEWPORTS_ENABLE from imgui.get_io().config_flags
         self._has_frame_begun = True
-        # imgui_dockspace_over_viewport()  # TODO: turn on after rendering into "Viewport" ImWindow
+        utils.imgui_dockspace_over_viewport()
+        self.viewport_size = viewport_size
 
     def end_frame(self):
         imgui.render()
@@ -107,7 +109,7 @@ class Renderer:
 
     def get_texdesc_3channel_8bit(self) -> TextureDescription:
         desc = TextureDescription(
-            width=self.win_size.x, height=self.win_size.y,
+            width=self.viewport_size.x, height=self.viewport_size.y,
             internal_format=GL_RGB8,
             format=GL_RGB,
             type=GL_UNSIGNED_BYTE,
@@ -116,7 +118,7 @@ class Renderer:
 
     def get_texdesc_3channel_flt32(self) -> TextureDescription:
         desc = TextureDescription(
-            width=self.win_size.x, height=self.win_size.y,
+            width=self.viewport_size.x, height=self.viewport_size.y,
             internal_format=GL_RGB32F,
             format=GL_RGB,
             type=GL_FLOAT,
@@ -125,7 +127,7 @@ class Renderer:
 
     def get_texdesc_2channel_flt32(self) -> TextureDescription:
         desc = TextureDescription(
-            width=self.win_size.x, height=self.win_size.y,
+            width=self.viewport_size.x, height=self.viewport_size.y,
             internal_format=GL_RG32F,
             format=GL_RG,
             type=GL_FLOAT,
@@ -134,7 +136,7 @@ class Renderer:
     
     def get_texdesc_1channel_flt32(self) -> TextureDescription:
         desc = TextureDescription(
-            width=self.win_size.x, height=self.win_size.y,
+            width=self.viewport_size.x, height=self.viewport_size.y,
             internal_format=GL_R32F,
             format=GL_RED,
             type=GL_FLOAT,
@@ -143,7 +145,7 @@ class Renderer:
 
     def get_texdesc_1channel_int32(self) -> TextureDescription:
         desc = TextureDescription(
-            width=self.win_size.x, height=self.win_size.y,
+            width=self.viewport_size.x, height=self.viewport_size.y,
             internal_format=GL_R32I,
             format=GL_RED_INTEGER,
             type=GL_INT,
@@ -152,7 +154,7 @@ class Renderer:
 
     def get_texdesc_depth32(self) -> TextureDescription:
         desc = TextureDescription(
-            width=self.win_size.x, height=self.win_size.y,
+            width=self.viewport_size.x, height=self.viewport_size.y,
             internal_format=GL_DEPTH_COMPONENT32,
             format=GL_DEPTH_COMPONENT,
             type=GL_FLOAT

@@ -1,10 +1,10 @@
-from texture import Texture, TextureDescription
+from texture import TextureDescription
+from utils import imgui_dockspace_over_viewport
 
 import glfw
 import glm
 import imgui
 from imgui.integrations.glfw import GlfwRenderer
-import numpy as np
 from OpenGL.GL import GL_FLOAT, GL_INT, glGenVertexArrays
 # Texture related imports
 from OpenGL.GL import GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT32
@@ -47,8 +47,13 @@ class Renderer:
         )
 
         imgui.create_context()
+        io = imgui.get_io()
+        io.display_size = self.win_size.x, self.win_size.y
+        io.config_flags |= imgui.CONFIG_NAV_ENABLE_KEYBOARD
+        # io.config_flags |= imgui.CONFIG_VIEWPORTS_ENABLE  # Not working at the moment. See below.
+        io.config_flags |= imgui.CONFIG_DOCKING_ENABLE
+        io.config_windows_move_from_title_bar_only = True
         self.imgui_impl = GlfwRenderer(self.window)
-        imgui.get_io().display_size = self.win_size.x, self.win_size.y
 
         glEnable(GL_CULL_FACE)
         glCullFace(GL_BACK)
@@ -74,13 +79,23 @@ class Renderer:
         self.win_size.x = w
         self.win_size.y = h
         self.imgui_impl.process_inputs()
-        imgui.new_frame()
+        imgui.new_frame()  # remove CONFIG_VIEWPORTS_ENABLE from imgui.get_io().config_flags
         self._has_frame_begun = True
+        # imgui_dockspace_over_viewport()  # TODO: turn on after rendering into "Viewport" ImWindow
 
     def end_frame(self):
         imgui.render()
         self.imgui_impl.render(imgui.get_draw_data())
-        imgui.end_frame()
+
+        # CONFIG_VIEWPORTS_ENABLE is removed from imgui.get_io().config_flags at imgui.new_frame()
+        # also render_platform_windows_default() has not been implemented yet https://github.com/pyimgui/pyimgui/issues/259#issuecomment-1039239640
+        if (imgui.get_io().config_flags & imgui.CONFIG_VIEWPORTS_ENABLE):
+            context = glfw.get_current_context()
+            imgui.update_platform_windows()
+            imgui.render_platform_windows_default()
+            glfw.make_context_current(context)
+
+        # imgui.end_frame()
         glfw.swap_buffers(self.window)
         self._has_frame_begun = False
 

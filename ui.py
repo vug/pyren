@@ -35,10 +35,10 @@ class ImWindows:
     def __init__(self, assets: Assets, scene: Scene):
         self._assets = assets
         self._scene = scene
-        self._showAssetsWindow = False
-        self._showTextureViewerWindow = True
-        self._showInspectorWindow = True
-        self._showImGuiDemoWindow = False
+        self._show_assets_window = False
+        self._show_texture_viewer_window = True
+        self._show_inspector_window = True
+        self._show_imgui_demo_window = False
         self._obj_combo = ComboBox("Select Object", list(self._scene.objects.values()), list(self._scene.objects.keys()), 0)
         self._tex_combo = ComboBox("Select Texture", list(self._assets.textures.values()), list(self._assets.textures.keys()))
 
@@ -50,10 +50,10 @@ class ImWindows:
     def draw(self):
         if imgui.begin_main_menu_bar().opened:
             if imgui.begin_menu('View', True).opened:
-                _, self._showAssetsWindow = imgui.core.menu_item("Assets", None, self._showAssetsWindow)
-                _, self._showTextureViewerWindow = imgui.core.menu_item("Texture Viewer", None, self._showTextureViewerWindow)
-                _, self._showInspectorWindow = imgui.core.menu_item("Inspector", None, self._showInspectorWindow)
-                _, self._showImGuiDemoWindow = imgui.core.menu_item("ImGui Demo Window", None, self._showImGuiDemoWindow)
+                _, self._show_assets_window = imgui.core.menu_item("Assets", None, self._show_assets_window)
+                _, self._show_texture_viewer_window = imgui.core.menu_item("Texture Viewer", None, self._show_texture_viewer_window)
+                _, self._show_inspector_window = imgui.core.menu_item("Inspector", None, self._show_inspector_window)
+                _, self._show_imgui_demo_window = imgui.core.menu_item("ImGui Demo Window", None, self._show_imgui_demo_window)
                 imgui.end_menu()
 
             if imgui.begin_menu('Actions', True).opened:
@@ -64,13 +64,13 @@ class ImWindows:
 
             imgui.end_main_menu_bar()   
        
-        if self._showInspectorWindow:
-            _, self._showInspectorWindow = self.draw_inspector_window(self._scene, self._obj_combo)
-        if (self._showAssetsWindow):
-            _, self._showAssetsWindow = ImWindows.draw_assets_window(self._assets)
-        if (self._showTextureViewerWindow):
-            _, self._showTextureViewerWindow = ImWindows.draw_texture_viewer_window(self._tex_combo)
-        if (self._showImGuiDemoWindow):
+        if self._show_inspector_window:
+            _, self._show_inspector_window = self.draw_inspector_window(self._scene, self._obj_combo)
+        if (self._show_assets_window):
+            _, self._show_assets_window = ImWindows.draw_assets_window(self._assets)
+        if (self._show_texture_viewer_window):
+            _, self._show_texture_viewer_window = ImWindows.draw_texture_viewer_window(self._tex_combo)
+        if (self._show_imgui_demo_window):
             show_test_window()
 
 

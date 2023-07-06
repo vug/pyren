@@ -17,13 +17,16 @@ import ui
 import utils
 
 import glm
+import numpy as np
 from OpenGL.GL import (
     GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, glClear, glClearColor,
     GL_TRIANGLES, glBindVertexArray, glDrawArrays,
-    glActiveTexture, GL_TEXTURE0
+    glActiveTexture, GL_TEXTURE0,
+    glReadBuffer, GL_COLOR_ATTACHMENT0, glReadPixels, GL_RGB, GL_FLOAT, glTexImage2D, GL_TEXTURE_2D, GL_UNSIGNED_BYTE, GL_RGB8, glPixelStorei, GL_UNPACK_ALIGNMENT,
 )
 
 import traceback
+import imgui
 
 renderer = Renderer()
 
@@ -48,6 +51,7 @@ def main():
     assets.make_texture("mesh_id", renderer.get_texdesc_1channel_int32())
     assets.make_texture("mesh_id_colored", renderer.get_texdesc_3channel_8bit())
     assets.make_texture("viewport", renderer.get_texdesc_3channel_8bit())
+    assets.make_texture("cpu", renderer.get_texdesc_3channel_8bit())
     fb_gbuffer = Framebuffer(
         color_textures=[assets.textures[name] for name in ["scene", "world_pos", "world_normal", "uv", "my_depth", "mesh_id", "mesh_id_colored"]],
         depth_texture=Texture(renderer.get_texdesc_default_depth())  # TODO: replace with has_depth, and has_stencil bools default to False
@@ -83,8 +87,13 @@ def main():
     #globals().update(locals())
     
     while renderer.is_running():
+        # TODO: separate renderer and ui. Call ui.begin_frame() before renderer.begin_frame() so that renderer gets viewport_size at the same frame, not a frame late
+        renderer.imgui_impl.process_inputs()
+        imgui.new_frame()  # removes CONFIG_VIEWPORTS_ENABLE from imgui.get_io().config_flags
+        utils.imgui_dockspace_over_viewport()        
+        im_windows.draw()
         renderer.begin_frame(viewport_size=im_windows.viewport_size, fbos=[fb_gbuffer, fb_viewport], cam=scene.cam)
-        im_windows.draw()  # TODO: separate renderer and ui. Call ui.begin_frame() before renderer.begin_frame() so that renderer gets viewport_size at the same frame, not a frame late
+        assets.textures["cpu"].resize_if_needed(im_windows.viewport_size.x, im_windows.viewport_size.y)
 
         glClearColor(0.1, 0.2, 0.3, 1)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)        
@@ -110,6 +119,26 @@ def main():
             glDrawArrays(GL_TRIANGLES, 0, obj.mesh.vertex_count)
             glBindVertexArray(0)
             obj.shader.unbind()
+        
+        if True:
+            assert(assets.textures["world_pos"].desc.width == assets.textures["world_normal"].desc.width)
+            assert(assets.textures["world_pos"].desc.width == assets.textures["cpu"].desc.width)
+            glReadBuffer(GL_COLOR_ATTACHMENT0 + 1)
+            w, h = assets.textures["cpu"].desc.width, assets.textures["cpu"].desc.height
+            worldPos = glReadPixels(0, 0, w, h, GL_RGB, GL_FLOAT).reshape(-1, 3)
+            glReadBuffer(GL_COLOR_ATTACHMENT0 + 2)
+            worldNorm = glReadPixels(0, 0, w, h, GL_RGB, GL_FLOAT).reshape(-1, 3)
+            lightPos = np.array([[0, 5, 0]])
+            surfToLight = lightPos - worldPos
+            lightDir = surfToLight / np.linalg.norm(surfToLight, ord=2, axis=1).reshape(-1, 1)
+            dot = np.einsum('ij,ij->i', worldNorm, lightDir).reshape(-1, 1)
+            diffuse = np.maximum(0, dot) * 255
+            rgb = np.repeat(diffuse, repeats=3, axis=1)
+            pixels = np.asarray(rgb, dtype=np.uint8).flatten()
+            assets.textures["cpu"].bind()
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels)
+            assets.textures["cpu"].unbind()
         fb_gbuffer.unbind()
 
 

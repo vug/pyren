@@ -1,7 +1,7 @@
 from more_itertools import flatten
 import numpy as np
 from OpenGL.GL import GL_UNSIGNED_BYTE
-from OpenGL.GL import GL_RGBA, GL_RGBA8
+from OpenGL.GL import GL_RED, GL_RED_INTEGER, GL_RG, GL_RGB, GL_RGBA, GL_RGBA8, GL_FLOAT, GL_RGB32F, GL_RG32F, GL_R32F, GL_INT, GL_R32I
 from OpenGL.GL import GL_TEXTURE_2D, GL_NEAREST, GL_TEXTURE_MIN_FILTER, GL_TEXTURE_MAG_FILTER
 from OpenGL.GL import GLint, GLenum
 from OpenGL.GL import glBindTexture, glGenTextures, glTexImage2D, glTexParameteri
@@ -19,6 +19,31 @@ class TextureDescription:
     type: GLenum = GL_UNSIGNED_BYTE
     min_filter: GLint = GL_NEAREST
     mag_filter: GLint = GL_NEAREST
+
+    def num_channels(self) -> int:
+        if self.format == GL_RGBA:
+            return 4
+        if self.format == GL_RGB:
+            return 3
+        if self.format == GL_RG:
+            return 2
+        if self.format == GL_RED or self.format == GL_RED_INTEGER:
+            return 1
+        else:
+            raise NotImplementedError("TODO: Implement num_channels for other formats!")
+    
+    def dtype(self) -> np.dtype:
+        # Probably I'll only use 32-bit floats and integers
+        if self.type == GL_FLOAT:
+            assert(self.internal_format in (GL_RGB32F, GL_RG32F, GL_R32F))
+            return np.float32
+        if self.type == GL_INT:
+            assert(self.internal_format in (GL_R32I, ))
+            return np.int32
+        if self.type == GL_UNSIGNED_BYTE:
+            return np.uint8
+        else:
+            raise NotImplementedError("TODO: Implement dtype for other types")
 
 
 class Texture:

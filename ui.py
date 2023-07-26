@@ -1,11 +1,17 @@
-from scene import Scene, Object
+from datetime import datetime
+import math
+import png
+
+import glm
+import imgui
+import numpy as np
+from OpenGL.GL import glGetTextureImage
+
 from assets import Assets
+from scene import Scene, Object
+from texture import Texture
 import utils
 
-import imgui
-import glm
-
-import math
 
 class ComboBox:
     def __init__(self, label: str, seq, names, initial_ix=0):
@@ -14,7 +20,7 @@ class ComboBox:
         self.selected_ix = initial_ix
         self.label = label
 
-    def draw(self):
+    def draw(self) -> tuple[int, str, Texture]:
         _, self.selected_ix = imgui.combo(self.label, self.selected_ix, self.names)
         selected_name = self.names[self.selected_ix]
         selected = self.seq[self.selected_ix]
@@ -133,13 +139,36 @@ class ImWindows:
         imgui.end()
         return has_clicked, is_open
 
-    def draw_texture_viewer_window(tex_combo):
+    def draw_texture_viewer_window(tex_combo: ComboBox):
             has_clicked, is_open = imgui.begin("Texture Viewer", True, imgui.WINDOW_NO_SCROLLBAR)
-            _, _, viz_tex = tex_combo.draw()
+            _, tex_name, tex = tex_combo.draw()
+            imgui.same_line()
+            if imgui.button("save"):
+                filename = f"{tex_name}_{datetime.now().strftime('%Y%m%dT%H%M%S')}.png"
+                print(f"saving {filename}...")
+                desc = tex.desc
+                num_channels = desc.num_channels()
+                pixels = np.empty(shape=(desc.width, desc.height, num_channels), dtype=desc.dtype())
+                # pixels[:, :, 3] = 255 if pixels.dtype == np.uint8 else 1
+                glGetTextureImage(tex.get_id(), 0, desc.format, desc.type, pixels.size * pixels.itemsize, pixels)
+                pixels = np.flip(pixels, axis=(0, 1))  # OpenGL images are inverted on y-axis
+                # TODO: for now we only have PNG format. Can bring TIFF to save image files with floating point channels
+                if pixels.dtype != np.uint8:
+                    pixels = (pixels * 255.99).clip(min=0.0, max=255.99).astype(np.uint8)
+                # Make 2- and 1-channel images 3-channel RGB (png module saves 2-channel images as grayscale w/alpha)
+                if num_channels == 2:
+                    pixels = np.concatenate((pixels, np.zeros(shape=(pixels.shape[0], pixels.shape[1], 1), dtype=pixels.dtype)), axis=2)
+                    num_channels = 3
+                if num_channels == 1:
+                    pixels = np.concatenate((pixels, np.zeros(shape=(pixels.shape[0], pixels.shape[1], 2), dtype=pixels.dtype)), axis=2)
+                    num_channels = 3
+                pixels = pixels.reshape(-1, desc.width * num_channels)
+                png_mode = {4: "RGBA", 3: "RGB", 2: "RGB", 1: "RGB"}[desc.num_channels()]  # correct: {4: "RGBA", 3: "RGB", 2: "LA", 1: "L"}
+                png.from_array(pixels, mode=png_mode).save(filename)
             imgui.separator()
             available_sz = imgui.get_content_region_available()
             win_ar = available_sz.x / available_sz.y
-            tex_ar = viz_tex.desc.width / viz_tex.desc.height
+            tex_ar = tex.desc.width / tex.desc.height
             w, h = 1, 1
             if tex_ar >= win_ar:
                 w = available_sz.x
@@ -147,6 +176,6 @@ class ImWindows:
             else:
                 h = available_sz.y
                 w = h * tex_ar
-            imgui.image(viz_tex.get_id(), w, h, uv0=(0, 1), uv1=(1, 0), border_color=(1,1,0,1))
+            imgui.image(tex.get_id(), w, h, uv0=(0, 1), uv1=(1, 0), border_color=(1,1,0,1))
             imgui.end()
             return has_clicked, is_open

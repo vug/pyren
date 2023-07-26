@@ -81,7 +81,6 @@ class Renderer:
         cam: Camera whose aspect ratio will be updated according to viewport aspect ratio
         """        
         self.viewport_size = viewport_size
-        glfw.poll_events()
         (w, h) = glfw.get_window_size(self.window)
         self.win_size = glm.ivec2(w, h)
         # self.imgui_impl.process_inputs()

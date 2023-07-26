@@ -17,6 +17,7 @@ import ui
 import utils
 
 import glm
+import glfw
 import numpy as np
 from OpenGL.GL import (
     GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, glClear, glClearColor,
@@ -87,6 +88,7 @@ def main():
     #globals().update(locals())
     
     while renderer.is_running():
+        glfw.poll_events()  # https://github.com/ocornut/imgui/issues/3575 Shouldn't poll events after ImGui starts
         # TODO: separate renderer and ui. Call ui.begin_frame() before renderer.begin_frame() so that renderer gets viewport_size at the same frame, not a frame late
         renderer.imgui_impl.process_inputs()
         imgui.new_frame()  # removes CONFIG_VIEWPORTS_ENABLE from imgui.get_io().config_flags

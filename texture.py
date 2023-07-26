@@ -1,12 +1,16 @@
+import ctypes
+from dataclasses import dataclass
+
 from more_itertools import flatten
 import numpy as np
-from OpenGL.GL import GL_UNSIGNED_BYTE
+from OpenGL.GL import GL_UNSIGNED_BYTE, GLubyte, GLfloat
 from OpenGL.GL import GL_RED, GL_RED_INTEGER, GL_RG, GL_RGB, GL_RGBA, GL_RGBA8, GL_FLOAT, GL_RGB32F, GL_RG32F, GL_R32F, GL_INT, GL_R32I
 from OpenGL.GL import GL_TEXTURE_2D, GL_NEAREST, GL_TEXTURE_MIN_FILTER, GL_TEXTURE_MAG_FILTER
 from OpenGL.GL import GLint, GLenum
 from OpenGL.GL import glBindTexture, glGenTextures, glTexImage2D, glTexParameteri
-
-from dataclasses import dataclass
+from OpenGL.GL import glGenBuffers, glBindBuffer, glBufferData, GL_PIXEL_PACK_BUFFER, GL_PIXEL_UNPACK_BUFFER, glTexSubImage2D, GL_STREAM_DRAW, glGetTextureImage, glMapBuffer, glUnmapBuffer, GL_READ_ONLY
+from OpenGL.GL import glGetTexLevelParameteriv, glGetTextureLevelParameteriv, GL_TEXTURE_BUFFER_SIZE
+from OpenGL.GL import arrays, GL_TEXTURE_WIDTH, GL_TEXTURE_HEIGHT, GL_TEXTURE_DEPTH, GL_TEXTURE_INTERNAL_FORMAT, GL_TEXTURE_RED_SIZE, GL_TEXTURE_GREEN_SIZE, GL_TEXTURE_BLUE_SIZE, GL_TEXTURE_ALPHA_SIZE
 
 @dataclass
 class TextureDescription:
@@ -36,14 +40,20 @@ class TextureDescription:
         # Probably I'll only use 32-bit floats and integers
         if self.type == GL_FLOAT:
             assert(self.internal_format in (GL_RGB32F, GL_RG32F, GL_R32F))
-            return np.float32
+            return np.dtype(np.float32)
         if self.type == GL_INT:
             assert(self.internal_format in (GL_R32I, ))
-            return np.int32
+            return np.dtype(np.int32)
         if self.type == GL_UNSIGNED_BYTE:
-            return np.uint8
+            return np.dtype(np.uint8)
         else:
             raise NotImplementedError("TODO: Implement dtype for other types")
+    
+    def pixel_size(self) -> int:
+        return self.num_channels() * self.dtype().itemsize
+    
+    def size_in_bytes(self) -> int:
+        return self.width * self.height * self.pixel_size()
 
 
 class Texture:
@@ -85,3 +95,80 @@ class Texture:
         texDesc = TextureDescription()
         texData = np.array(list(flatten([[i, j, 128, 255] for i in range(texDesc.height) for j in range(texDesc.width)])))
         return Texture(texDesc, texData)
+    
+    def debug(self):
+        tex_width = glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH)
+        tex_height = glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT)
+        tex_depth = glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_DEPTH)
+        tex_internal_format = glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT)
+        tex_red_size = glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_RED_SIZE)
+        tex_green_size = glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_GREEN_SIZE)
+        tex_blue_size = glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_BLUE_SIZE)
+        tex_alpha_size = glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_ALPHA_SIZE)
+        # TODO: add GL_TEXTURE_BUFFER_OFFSET, GL_TEXTURE_BUFFER_SIZE
+
+
+class PixelBuffer:
+    def __init__(self, width: int, height: int, num_channels: int, dtype: np.dtype):
+        self._id = glGenBuffers(1)
+        self.width = width
+        self.height = height
+        self.num_channels = num_channels
+        self.dtype = dtype
+        self.size_in_bytes = 0
+    
+    def read_tex(self, tex: Texture):
+        desc = tex.desc
+        assert self.width == desc.width and self.height == desc.height
+        assert self.num_channels == desc.num_channels() and self.dtype == desc.dtype()
+        self.size_in_bytes = desc.size_in_bytes()
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, self._id)
+        glBufferData(GL_PIXEL_PACK_BUFFER, self.size_in_bytes, None, GL_STREAM_DRAW)  # assuming will update every frame
+        glGetTextureImage(tex.get_id(), 0, desc.format, desc.type, self.size_in_bytes, ctypes.c_void_p(0))
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0)
+    
+    def write_tex(self, tex: Texture):
+        desc = tex.desc
+        assert self.width == desc.width and self.height == desc.height
+        assert self.num_channels == desc.num_channels() and self.dtype == desc.dtype()
+        assert self.size_in_bytes > 0
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, self._id)
+        glBindTexture(GL_TEXTURE_2D, tex.get_id())
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, desc.width, desc.height, desc.format, desc.type, ctypes.c_void_p(0))
+        glBindTexture(GL_TEXTURE_2D, 0)
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
+
+    def resize_if_needed(self, width: int, height: int):
+        if (self.width == width and self.height == height):
+            return
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, self._id)
+        glBufferData(GL_PIXEL_PACK_BUFFER, width * height * self.num_channels * self.dtype.itemsize, None, GL_STREAM_DRAW)
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0)
+        self.width, self.height = width, height
+    
+    def map_as_np_array(self):
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, self._id)
+        pixels_ptr = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY)
+        ctype = GLubyte
+        if self.dtype == np.uint8:
+            ctype = GLubyte
+        elif self.dtype == np.float32:
+            ctype = GLfloat
+        else:
+            raise NotImplementedError("Add ctype for given dtype")
+        map_array_ctype = (ctype * self.width * self.height * self.num_channels).from_address(pixels_ptr)
+        map_array = np.ctypeslib.as_array(map_array_ctype).reshape((self.width, self.height, self.num_channels))
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0)
+        return map_array
+    
+    def unmap(self):
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, self._id)
+        glUnmapBuffer(GL_PIXEL_PACK_BUFFER)
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0)
+    
+    def get_id(self) -> int:
+        return self._id
+
+    def deinit(self):
+        raise NotImplementedError("Delete PBO")
+

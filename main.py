@@ -12,7 +12,7 @@ from framebuffer import Framebuffer
 from lights import PointLight
 from renderer import Renderer
 from scene import Scene, Object
-from texture import Texture
+from texture import Texture, PixelBuffer
 import ui
 import utils
 
@@ -53,6 +53,8 @@ def main():
     assets.make_texture("mesh_id_colored", renderer.get_texdesc_3channel_8bit())
     assets.make_texture("viewport", renderer.get_texdesc_3channel_8bit())
     assets.make_texture("cpu", renderer.get_texdesc_3channel_8bit())
+    pbo_world_pos = PixelBuffer(initial_viewport_size.x, initial_viewport_size.y, assets.textures["world_pos"].desc.num_channels(), assets.textures["world_pos"].desc.dtype())
+    pbo_cpu = PixelBuffer(initial_viewport_size.x, initial_viewport_size.y, assets.textures["cpu"].desc.num_channels(), assets.textures["cpu"].desc.dtype())
     fb_gbuffer = Framebuffer(
         color_textures=[assets.textures[name] for name in ["scene", "world_pos", "world_normal", "uv", "my_depth", "mesh_id", "mesh_id_colored"]],
         depth_texture=Texture(renderer.get_texdesc_default_depth())  # TODO: replace with has_depth, and has_stencil bools default to False
@@ -96,6 +98,8 @@ def main():
         im_windows.draw()
         renderer.begin_frame(viewport_size=im_windows.viewport_size, fbos=[fb_gbuffer, fb_viewport], cam=scene.cam)
         assets.textures["cpu"].resize_if_needed(im_windows.viewport_size.x, im_windows.viewport_size.y)
+        pbo_world_pos.resize_if_needed(im_windows.viewport_size.x, im_windows.viewport_size.y)
+        pbo_cpu.resize_if_needed(im_windows.viewport_size.x, im_windows.viewport_size.y)
 
         glClearColor(0.1, 0.2, 0.3, 1)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)        
@@ -141,6 +145,20 @@ def main():
             glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels)
             assets.textures["cpu"].unbind()
+
+        # TODO: implement point light via numba+cuda (via copying to pixel buffer)
+        # TODO: Make an enum: 1) numpy, 2) numba+cuda.
+        # TODO: Measure duration
+        if True:
+            pbo_world_pos.read_tex(assets.textures["world_pos"])
+            pbo_cpu.read_tex(assets.textures["cpu"])
+            arr_world_pos = pbo_world_pos.map_as_np_array()
+            arr_cpu = pbo_cpu.map_as_np_array()
+            # arr_cpu[:, :, :] = np.asarray(arr_world_pos * 255.99, dtype=np.uint8)
+            arr_cpu[:, :, 0] = 255
+            pbo_world_pos.unmap()
+            pbo_cpu.unmap()
+            pbo_cpu.write_tex(assets.textures["cpu"])
         fb_gbuffer.unbind()
 
 

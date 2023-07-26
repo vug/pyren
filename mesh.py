@@ -12,7 +12,6 @@ class Mesh:
 
         glBindVertexArray(self.vao)
         vbo = glGenBuffers(1)
-        print(f"vao {self.vao}, vbo {vbo}")
         glBindBuffer(GL_ARRAY_BUFFER, vbo)
         glBufferData(GL_ARRAY_BUFFER, np_vertices, GL_STATIC_DRAW)
         # glBufferData(GL_ARRAY_BUFFER, np_vertices.size * np_vertices.itemsize, np_vertices, GL_STATIC_DRAW)

@@ -176,6 +176,6 @@ class ImWindows:
             else:
                 h = available_sz.y
                 w = h * tex_ar
-            imgui.image(tex.get_id(), w, h, uv0=(0, 1), uv1=(1, 0), border_color=(1,1,0,1))
+            imgui.image(tex.get_id(), w, h, uv0=(0, 1), uv1=(1, 0))  # border_color=(1,1,0,1)
             imgui.end()
             return has_clicked, is_open

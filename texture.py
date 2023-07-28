@@ -97,6 +97,7 @@ class Texture:
         return Texture(texDesc, texData)
     
     def debug(self):
+        self.bind()
         tex_width = glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH)
         tex_height = glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT)
         tex_depth = glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_DEPTH)
@@ -105,6 +106,7 @@ class Texture:
         tex_green_size = glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_GREEN_SIZE)
         tex_blue_size = glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_BLUE_SIZE)
         tex_alpha_size = glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_ALPHA_SIZE)
+        self.unbind()
         # TODO: add GL_TEXTURE_BUFFER_OFFSET, GL_TEXTURE_BUFFER_SIZE
 
 
@@ -161,7 +163,7 @@ class PixelBuffer:
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0)
         return map_array
     
-    def unmap(self):
+    def unmap_as_np_array(self):
         glBindBuffer(GL_PIXEL_PACK_BUFFER, self._id)
         glUnmapBuffer(GL_PIXEL_PACK_BUFFER)
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0)

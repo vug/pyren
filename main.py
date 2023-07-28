@@ -16,25 +16,51 @@ from texture import Texture, PixelBuffer
 import ui
 import utils
 
+from cuda import cudart
 import glm
 import glfw
+import imgui
+import numba.cuda as nbcuda
 import numpy as np
 from OpenGL.GL import (
     GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, glClear, glClearColor,
     GL_TRIANGLES, glBindVertexArray, glDrawArrays,
     glActiveTexture, GL_TEXTURE0,
     glReadBuffer, GL_COLOR_ATTACHMENT0, glReadPixels, GL_RGB, GL_FLOAT, glTexImage2D, GL_TEXTURE_2D, GL_UNSIGNED_BYTE, GL_RGB8, glPixelStorei, GL_UNPACK_ALIGNMENT,
+    GL_PACK_ALIGNMENT
 )
 
+import ctypes
+from enum import Enum
+import math
 import traceback
-import imgui
 
 renderer = Renderer()
+class Operation(Enum):
+    TEX_TO_NUMPY = 1
+    TEX_TO_PBO_TO_MAP = 2
+    TEX_TO_PBO_TO_DEV_ND_ARR = 3
+
+operation = Operation.TEX_TO_PBO_TO_DEV_ND_ARR
+
+@nbcuda.jit
+def process_texture(pixels):
+    i, j = nbcuda.grid(2)
+    N, M = nbcuda.gridsize(2)
+
+    if i >= pixels.shape[0] or j >= pixels.shape[1]:
+        return
+
+    pixels[i, j, 0] = np.uint8(i / N * 255.99)
+    pixels[i, j, 1] = np.uint8(j / M * 255.99)
+
 
 
 def main():
     initial_viewport_size = utils.read_window_size_from_imgui_ini("Viewport")
     renderer.init(win_size=glm.ivec2(1024, 768), viewport_size=initial_viewport_size)
+    glPixelStorei(GL_PACK_ALIGNMENT, 1)
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1)    
 
     assets = Assets(renderer)
     assets.load_obj("monkey", "models/suzanne_smooth.obj")
@@ -60,6 +86,13 @@ def main():
         depth_texture=Texture(renderer.get_texdesc_default_depth())  # TODO: replace with has_depth, and has_stencil bools default to False
     )
     fb_viewport = Framebuffer([assets.textures["viewport"]])
+    # TODO: option to fill out a texture while constructing
+    if True:
+        tex = assets.textures["cpu"]
+        desc = tex.desc
+        tex.bind()
+        glTexImage2D(GL_TEXTURE_2D, 0, desc.internal_format, desc.width, desc.height, 0, desc.format, desc.type, np.zeros(shape=(desc.width, desc.height, desc.num_channels()), dtype=desc.dtype()))
+        tex.unbind()    
     
     scene = Scene(renderer)
     scene.clear_color = glm.vec3(0.1, 0.15, 0.2)
@@ -126,7 +159,7 @@ def main():
             glBindVertexArray(0)
             obj.shader.unbind()
         
-        if True:
+        if operation == Operation.TEX_TO_NUMPY:
             assert(assets.textures["world_pos"].desc.width == assets.textures["world_normal"].desc.width)
             assert(assets.textures["world_pos"].desc.width == assets.textures["cpu"].desc.width)
             glReadBuffer(GL_COLOR_ATTACHMENT0 + 1)
@@ -142,23 +175,45 @@ def main():
             rgb = np.repeat(diffuse, repeats=3, axis=1)
             pixels = np.asarray(rgb, dtype=np.uint8).flatten()
             assets.textures["cpu"].bind()
-            glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels)
             assets.textures["cpu"].unbind()
 
-        # TODO: implement point light via numba+cuda (via copying to pixel buffer)
-        # TODO: Make an enum: 1) numpy, 2) numba+cuda.
-        # TODO: Measure duration
-        if True:
+        elif operation == Operation.TEX_TO_PBO_TO_MAP:
             pbo_world_pos.read_tex(assets.textures["world_pos"])
             pbo_cpu.read_tex(assets.textures["cpu"])
             arr_world_pos = pbo_world_pos.map_as_np_array()
             arr_cpu = pbo_cpu.map_as_np_array()
-            # arr_cpu[:, :, :] = np.asarray(arr_world_pos * 255.99, dtype=np.uint8)
-            arr_cpu[:, :, 0] = 255
-            pbo_world_pos.unmap()
-            pbo_cpu.unmap()
+            # arr_cpu[:, :, 0] = 255
+            arr_cpu[:, :, :] = np.asarray(arr_world_pos * 255.99, dtype=np.uint8)
+            pbo_world_pos.unmap_as_np_array()
+            pbo_cpu.unmap_as_np_array()
             pbo_cpu.write_tex(assets.textures["cpu"])
+
+        # TODO: Measure frame duration
+        # TODO: Implement point light via numba+cuda (via copying to pixel buffer)
+        # TODO: Make an enum: 1) numpy, 2) numba+cuda.
+        elif operation == Operation.TEX_TO_PBO_TO_DEV_ND_ARR:
+            pbo_cpu.read_tex(assets.textures["cpu"])
+            # TODO: registering and unregistering (similarly, mapping and unmapping) every frame might not be a good idea. Re-register only if PBO is resized
+            err, gl_resource = cudart.cudaGraphicsGLRegisterBuffer(pbo_cpu.get_id(), cudart.cudaGraphicsRegisterFlags.cudaGraphicsRegisterFlagsNone)
+            (err,) = cudart.cudaGraphicsMapResources(1, gl_resource, 0)
+            (err, dev_ptr, dev_buff_size) = cudart.cudaGraphicsResourceGetMappedPointer(gl_resource)
+            desc = assets.textures["cpu"].desc
+            # For some reason, shape has to be (height, width, channels) and not (w, h, c). Otherwise 
+            shape, strides, dtype = nbcuda.api.prepare_shape_strides_dtype(
+                shape=(desc.height, desc.width, desc.num_channels()), strides=None, dtype=desc.dtype(), order="C")
+            mem_ptr = nbcuda.driver.MemoryPointer(context=nbcuda.current_context(), pointer=ctypes.c_uint64(dev_ptr), size=dev_buff_size)
+            dev_nd_array = nbcuda.cudadrv.devicearray.DeviceNDArray(shape, strides, dtype, gpu_data=mem_ptr)
+
+            threadsperblock = (16, 16)
+            blockspergrid_x = math.ceil(dev_nd_array.shape[0] / threadsperblock[0])
+            blockspergrid_y = math.ceil(dev_nd_array.shape[1] / threadsperblock[1])
+            blockspergrid = (blockspergrid_x, blockspergrid_y)
+            process_texture[blockspergrid, threadsperblock](dev_nd_array)     
+
+            pbo_cpu.write_tex(assets.textures["cpu"])
+            (err,) = cudart.cudaGraphicsUnmapResources(1, gl_resource, 0)
+            (err,) = cudart.cudaGraphicsUnregisterResource(gl_resource)
         fb_gbuffer.unbind()
 
 

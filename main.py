@@ -80,19 +80,23 @@ def process_texture(pos, norm, pixels, light_pos):
     if i >= pixels.shape[0] or j >= pixels.shape[1]:
         return
 
-    # TODO: add more lights by making light_pos of shape (num_lights, 3)
     # no need to copy light_pos to a local memory because it's physically the same as global dev RAM
-    s2l = nbcuda.local.array(shape=3, dtype=np.float32)  # vec3
-    p = pos[i, j]
-    n = norm[i, j]
-    sub(light_pos, p, s2l)  # s2l = (l[0] - p[0], l[1] - p[1], l[2] - p[2])  
-    normalize(s2l, s2l)
-    diff = dot(n, s2l)
-    if diff < 0:
-        diff = 0
-    diff = np.uint8(diff * 255)
-    # TODO: add specular highlights by Phong (or Blinn-Phong model)
-    pixels[i, j] = (diff, diff, diff)
+    light = np.float32(0)
+    for li in range(light_pos.shape[0]):
+        s2l = nbcuda.local.array(shape=3, dtype=np.float32)  # vec3
+        p = pos[i, j]
+        n = norm[i, j]
+        sub(light_pos[li], p, s2l)  # s2l = (l[0] - p[0], l[1] - p[1], l[2] - p[2])  
+        normalize(s2l, s2l)
+        diff = dot(n, s2l)
+        if diff < 0:
+            diff = 0
+        light += diff
+        # TODO: add specular highlights by Phong (or Blinn-Phong model)
+    if light > 1:
+        light = 1
+    light = np.uint8(light * 255.99)
+    pixels[i, j] = (light, light, light)
 
     # x = np.dot(pos[i, j], norm[i, j])
 
@@ -287,7 +291,7 @@ def main():
             blockspergrid_x = math.ceil(dev_arr_world_pos.shape[0] / threadsperblock[0])
             blockspergrid_y = math.ceil(dev_arr_world_pos.shape[1] / threadsperblock[1])
             blockspergrid = (blockspergrid_x, blockspergrid_y)
-            light_pos = np.array([0, 5, 0], dtype=np.float32)
+            light_pos = np.array([[0, 5, 0], [0, 0, 5]], dtype=np.float32)
             dev_light_pos = nbcuda.to_device(light_pos)
             process_texture[blockspergrid, threadsperblock](dev_arr_world_pos, dev_arr_world_normal, dev_arr_cpu, dev_light_pos)     
 

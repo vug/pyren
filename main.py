@@ -44,16 +44,67 @@ class Operation(Enum):
 operation = Operation.TEX_TO_PBO_TO_DEV_ND_ARR
 
 @nbcuda.jit
-def process_texture(pixels):
+def process_texture(pos, norm, pixels, light_pos):
     i, j = nbcuda.grid(2)
     N, M = nbcuda.gridsize(2)
 
     if i >= pixels.shape[0] or j >= pixels.shape[1]:
         return
 
-    pixels[i, j, 0] = np.uint8(i / N * 255.99)
-    pixels[i, j, 1] = np.uint8(j / M * 255.99)
+    # try shared memory, local memory stuff to bring light positions
+    # https://numba.readthedocs.io/en/stable/cuda/memory.html#local-memory
+    l = (0, 5, 0)
+    p = pos[i, j]
+    n = norm[i, j]
+    s2l = (l[0] - p[0], l[1] - p[1], l[2] - p[2])
+    # figure out how I can use np.dot
+    s2l_mag2 = s2l[0] * s2l[0] + s2l[1] * s2l[1] + s2l[2] * s2l[2]
+    # can't use np.sqrt here :-( See https://github.com/numba/numba/issues/7112
+    s2l_mag = math.sqrt(s2l_mag2)
+    s2l_n = (s2l[0] / s2l_mag, s2l[1] / s2l_mag, s2l[2] / s2l_mag)
+    diff = n * s2l_n[0] + n * s2l_n[1] + n * s2l_n[2]
+    if diff < 0:
+        diff = 0
+    diff = np.uint8(diff * 255)
+    pixels[i, j] = (diff, diff, diff)
 
+    # x = np.dot(pos[i, j], norm[i, j])
+
+    # pixels[i, j, 0] = np.uint8(pos[i, j, 0] * 255)
+    # pixels[i, j, 1] = np.uint8(pos[i, j, 1] * 255)
+    # pixels[i, j, 2] = np.uint8(pos[i, j, 2] * 255)
+
+    # pixels[i, j, 0] = np.uint8(i / N * 255.99)
+    # pixels[i, j, 1] = np.uint8(j / M * 255.99)
+
+
+class CudaPixelBuffer:
+    def __init__(self, pbo: PixelBuffer):
+        self._pbo = pbo
+        err, self._gl_resource = cudart.cudaGraphicsGLRegisterBuffer(pbo.get_id(), cudart.cudaGraphicsRegisterFlags.cudaGraphicsRegisterFlagsNone)
+        assert err == cudart.cudaError_t.cudaSuccess
+    
+    def deinit(self):
+        (err,) = cudart.cudaGraphicsUnregisterResource(self._gl_resource)
+    
+    def map(self) -> nbcuda.cudadrv.devicearray.DeviceNDArray:
+        (err,) = cudart.cudaGraphicsMapResources(1, self._gl_resource, 0)
+        (err, dev_ptr, dev_buff_size) = cudart.cudaGraphicsResourceGetMappedPointer(self._gl_resource)
+        # For some reason, shape has to be (height, width, channels) and not (w, h, c). Otherwise 
+        shape, strides, dtype = nbcuda.api.prepare_shape_strides_dtype(
+            shape=(self._pbo.height, self._pbo.width, self._pbo.num_channels), strides=None, dtype=self._pbo.dtype, order="C")
+        mem_ptr = nbcuda.driver.MemoryPointer(context=nbcuda.current_context(), pointer=ctypes.c_uint64(dev_ptr), size=dev_buff_size)
+        dev_nd_array = nbcuda.cudadrv.devicearray.DeviceNDArray(shape, strides, dtype, gpu_data=mem_ptr)
+        return dev_nd_array
+
+    def unmap(self):
+        (err,) = cudart.cudaGraphicsUnmapResources(1, self._gl_resource, 0)
+    
+    def resize_if_needed(self, width: int, height: int):
+        if self._pbo.resize_if_needed(width, height):
+            (err,) = cudart.cudaGraphicsUnregisterResource(self._gl_resource)
+            err, self._gl_resource = cudart.cudaGraphicsGLRegisterBuffer(self._pbo.get_id(), cudart.cudaGraphicsRegisterFlags.cudaGraphicsRegisterFlagsNone)
+            assert err == cudart.cudaError_t.cudaSuccess
 
 
 def main():
@@ -80,6 +131,7 @@ def main():
     assets.make_texture("viewport", renderer.get_texdesc_3channel_8bit())
     assets.make_texture("cpu", renderer.get_texdesc_3channel_8bit())
     pbo_world_pos = PixelBuffer(initial_viewport_size.x, initial_viewport_size.y, assets.textures["world_pos"].desc.num_channels(), assets.textures["world_pos"].desc.dtype())
+    pbo_world_normal = PixelBuffer(initial_viewport_size.x, initial_viewport_size.y, assets.textures["world_normal"].desc.num_channels(), assets.textures["world_normal"].desc.dtype())
     pbo_cpu = PixelBuffer(initial_viewport_size.x, initial_viewport_size.y, assets.textures["cpu"].desc.num_channels(), assets.textures["cpu"].desc.dtype())
     fb_gbuffer = Framebuffer(
         color_textures=[assets.textures[name] for name in ["scene", "world_pos", "world_normal", "uv", "my_depth", "mesh_id", "mesh_id_colored"]],
@@ -88,11 +140,12 @@ def main():
     fb_viewport = Framebuffer([assets.textures["viewport"]])
     # TODO: option to fill out a texture while constructing
     if True:
-        tex = assets.textures["cpu"]
-        desc = tex.desc
-        tex.bind()
-        glTexImage2D(GL_TEXTURE_2D, 0, desc.internal_format, desc.width, desc.height, 0, desc.format, desc.type, np.zeros(shape=(desc.width, desc.height, desc.num_channels()), dtype=desc.dtype()))
-        tex.unbind()    
+        assets.textures["world_pos"].fill_with_zeros()
+        assets.textures["world_normal"].fill_with_zeros()
+        assets.textures["cpu"].fill_with_zeros()
+        pbo_world_pos.read_tex(assets.textures["world_pos"])
+        pbo_world_normal.read_tex(assets.textures["world_normal"])
+        pbo_cpu.read_tex(assets.textures["cpu"])
     
     scene = Scene(renderer)
     scene.clear_color = glm.vec3(0.1, 0.15, 0.2)
@@ -121,6 +174,9 @@ def main():
     im_windows = ui.ImWindows(assets, scene, viewport_size=initial_viewport_size)
 
     #globals().update(locals())
+    cuda_world_pos = CudaPixelBuffer(pbo_world_pos)
+    cuda_world_normal = CudaPixelBuffer(pbo_world_normal)
+    cuda_cpu = CudaPixelBuffer(pbo_cpu)
     
     while renderer.is_running():
         glfw.poll_events()  # https://github.com/ocornut/imgui/issues/3575 Shouldn't poll events after ImGui starts
@@ -131,8 +187,9 @@ def main():
         im_windows.draw()
         renderer.begin_frame(viewport_size=im_windows.viewport_size, fbos=[fb_gbuffer, fb_viewport], cam=scene.cam)
         assets.textures["cpu"].resize_if_needed(im_windows.viewport_size.x, im_windows.viewport_size.y)
-        pbo_world_pos.resize_if_needed(im_windows.viewport_size.x, im_windows.viewport_size.y)
-        pbo_cpu.resize_if_needed(im_windows.viewport_size.x, im_windows.viewport_size.y)
+        cuda_world_pos.resize_if_needed(im_windows.viewport_size.x, im_windows.viewport_size.y)
+        cuda_world_normal.resize_if_needed(im_windows.viewport_size.x, im_windows.viewport_size.y)
+        cuda_cpu.resize_if_needed(im_windows.viewport_size.x, im_windows.viewport_size.y)
 
         glClearColor(0.1, 0.2, 0.3, 1)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)        
@@ -194,26 +251,35 @@ def main():
         # TODO: Make an enum: 1) numpy, 2) numba+cuda.
         elif operation == Operation.TEX_TO_PBO_TO_DEV_ND_ARR:
             pbo_cpu.read_tex(assets.textures["cpu"])
-            # TODO: registering and unregistering (similarly, mapping and unmapping) every frame might not be a good idea. Re-register only if PBO is resized
-            err, gl_resource = cudart.cudaGraphicsGLRegisterBuffer(pbo_cpu.get_id(), cudart.cudaGraphicsRegisterFlags.cudaGraphicsRegisterFlagsNone)
-            (err,) = cudart.cudaGraphicsMapResources(1, gl_resource, 0)
-            (err, dev_ptr, dev_buff_size) = cudart.cudaGraphicsResourceGetMappedPointer(gl_resource)
-            desc = assets.textures["cpu"].desc
-            # For some reason, shape has to be (height, width, channels) and not (w, h, c). Otherwise 
-            shape, strides, dtype = nbcuda.api.prepare_shape_strides_dtype(
-                shape=(desc.height, desc.width, desc.num_channels()), strides=None, dtype=desc.dtype(), order="C")
-            mem_ptr = nbcuda.driver.MemoryPointer(context=nbcuda.current_context(), pointer=ctypes.c_uint64(dev_ptr), size=dev_buff_size)
-            dev_nd_array = nbcuda.cudadrv.devicearray.DeviceNDArray(shape, strides, dtype, gpu_data=mem_ptr)
+            pbo_world_pos.read_tex(assets.textures["world_pos"])
+            pbo_world_normal.read_tex(assets.textures["world_normal"])
+            dev_arr_world_pos = cuda_world_pos.map()
+            dev_arr_world_normal = cuda_world_normal.map()
+            dev_arr_cpu = cuda_cpu.map()
+            # # TODO: registering and unregistering (similarly, mapping and unmapping) every frame might not be a good idea. Re-register only if PBO is resized
+            # err, gl_resource = cudart.cudaGraphicsGLRegisterBuffer(pbo_cpu.get_id(), cudart.cudaGraphicsRegisterFlags.cudaGraphicsRegisterFlagsNone)
+            # (err,) = cudart.cudaGraphicsMapResources(1, gl_resource, 0)
+            # (err, dev_ptr, dev_buff_size) = cudart.cudaGraphicsResourceGetMappedPointer(gl_resource)
+            # desc = assets.textures["cpu"].desc
+            # # For some reason, shape has to be (height, width, channels) and not (w, h, c). Otherwise 
+            # shape, strides, dtype = nbcuda.api.prepare_shape_strides_dtype(
+            #     shape=(desc.height, desc.width, desc.num_channels()), strides=None, dtype=desc.dtype(), order="C")
+            # mem_ptr = nbcuda.driver.MemoryPointer(context=nbcuda.current_context(), pointer=ctypes.c_uint64(dev_ptr), size=dev_buff_size)
+            # dev_nd_array = nbcuda.cudadrv.devicearray.DeviceNDArray(shape, strides, dtype, gpu_data=mem_ptr)
 
             threadsperblock = (16, 16)
-            blockspergrid_x = math.ceil(dev_nd_array.shape[0] / threadsperblock[0])
-            blockspergrid_y = math.ceil(dev_nd_array.shape[1] / threadsperblock[1])
+            blockspergrid_x = math.ceil(dev_arr_world_pos.shape[0] / threadsperblock[0])
+            blockspergrid_y = math.ceil(dev_arr_world_pos.shape[1] / threadsperblock[1])
             blockspergrid = (blockspergrid_x, blockspergrid_y)
-            process_texture[blockspergrid, threadsperblock](dev_nd_array)     
+            light_pos = np.array([0, 5, 0], dtype=np.float32)
+            process_texture[blockspergrid, threadsperblock](dev_arr_world_pos, dev_arr_world_normal, dev_arr_cpu, light_pos)     
 
+            cuda_world_pos.unmap()
+            cuda_world_normal.unmap()
+            cuda_cpu.unmap()
             pbo_cpu.write_tex(assets.textures["cpu"])
-            (err,) = cudart.cudaGraphicsUnmapResources(1, gl_resource, 0)
-            (err,) = cudart.cudaGraphicsUnregisterResource(gl_resource)
+            # (err,) = cudart.cudaGraphicsUnmapResources(1, gl_resource, 0)
+            # (err,) = cudart.cudaGraphicsUnregisterResource(gl_resource)
         fb_gbuffer.unbind()
 
 
@@ -244,7 +310,10 @@ def main():
         fb_viewport.unbind()
     
         renderer.end_frame()
-        
+
+    cuda_world_pos.deinit()    
+    cuda_world_normal.deinit()    
+    cuda_cpu.deinit()    
     renderer.deinit()
 
 if __name__ == "__main__":

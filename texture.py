@@ -75,6 +75,10 @@ class Texture:
         self.bind()
         glTexImage2D(GL_TEXTURE_2D, 0, self.desc.internal_format, self.desc.width, self.desc.height, 0, self.desc.format, self.desc.type, self.data)
         self.unbind()
+    
+    def fill_with_zeros(self):
+        data = np.zeros(shape=(self.desc.width, self.desc.height, self.desc.num_channels()), dtype=self.desc.dtype())
+        self.set_data(data)
 
     def bind(self):
         glBindTexture(GL_TEXTURE_2D, self._id)
@@ -140,13 +144,14 @@ class PixelBuffer:
         glBindTexture(GL_TEXTURE_2D, 0)
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
 
-    def resize_if_needed(self, width: int, height: int):
+    def resize_if_needed(self, width: int, height: int) -> bool:
         if (self.width == width and self.height == height):
-            return
+            return False
         glBindBuffer(GL_PIXEL_PACK_BUFFER, self._id)
         glBufferData(GL_PIXEL_PACK_BUFFER, width * height * self.num_channels * self.dtype.itemsize, None, GL_STREAM_DRAW)
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0)
         self.width, self.height = width, height
+        return True
     
     def map_as_np_array(self):
         glBindBuffer(GL_PIXEL_PACK_BUFFER, self._id)

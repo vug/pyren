@@ -43,6 +43,35 @@ class Operation(Enum):
 
 operation = Operation.TEX_TO_PBO_TO_DEV_ND_ARR
 
+# np.dot is not supported in CUDA numba
+@nbcuda.jit(device=True)
+def dot(a, b):
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+
+@nbcuda.jit(device=True)
+def sub(a, b, res):
+    res[0] = a[0] - b[0]
+    res[1] = a[1] - b[1]
+    res[2] = a[2] - b[2]
+
+@nbcuda.jit(device=True)
+def scale(a, s, res):
+    res[0] = a[0] * s
+    res[1] = a[1] * s
+    res[2] = a[2] * s
+
+@nbcuda.jit(device=True)
+def length(a):
+    # can't use np.sqrt here :-( See https://github.com/numba/numba/issues/7112
+    return math.sqrt(dot(a, a))
+
+@nbcuda.jit(device=True)
+def normalize(a, n):
+    mag = length(a)
+    n[0] = a[0] / mag
+    n[1] = a[1] / mag
+    n[2] = a[2] / mag
+
 @nbcuda.jit
 def process_texture(pos, norm, pixels, light_pos):
     i, j = nbcuda.grid(2)
@@ -51,21 +80,18 @@ def process_texture(pos, norm, pixels, light_pos):
     if i >= pixels.shape[0] or j >= pixels.shape[1]:
         return
 
-    # try shared memory, local memory stuff to bring light positions
-    # https://numba.readthedocs.io/en/stable/cuda/memory.html#local-memory
-    l = (0, 5, 0)
+    # TODO: add more lights by making light_pos of shape (num_lights, 3)
+    # no need to copy light_pos to a local memory because it's physically the same as global dev RAM
+    s2l = nbcuda.local.array(shape=3, dtype=np.float32)  # vec3
     p = pos[i, j]
     n = norm[i, j]
-    s2l = (l[0] - p[0], l[1] - p[1], l[2] - p[2])
-    # figure out how I can use np.dot
-    s2l_mag2 = s2l[0] * s2l[0] + s2l[1] * s2l[1] + s2l[2] * s2l[2]
-    # can't use np.sqrt here :-( See https://github.com/numba/numba/issues/7112
-    s2l_mag = math.sqrt(s2l_mag2)
-    s2l_n = (s2l[0] / s2l_mag, s2l[1] / s2l_mag, s2l[2] / s2l_mag)
-    diff = n * s2l_n[0] + n * s2l_n[1] + n * s2l_n[2]
+    sub(light_pos, p, s2l)  # s2l = (l[0] - p[0], l[1] - p[1], l[2] - p[2])  
+    normalize(s2l, s2l)
+    diff = dot(n, s2l)
     if diff < 0:
         diff = 0
     diff = np.uint8(diff * 255)
+    # TODO: add specular highlights by Phong (or Blinn-Phong model)
     pixels[i, j] = (diff, diff, diff)
 
     # x = np.dot(pos[i, j], norm[i, j])
@@ -256,32 +282,20 @@ def main():
             dev_arr_world_pos = cuda_world_pos.map()
             dev_arr_world_normal = cuda_world_normal.map()
             dev_arr_cpu = cuda_cpu.map()
-            # # TODO: registering and unregistering (similarly, mapping and unmapping) every frame might not be a good idea. Re-register only if PBO is resized
-            # err, gl_resource = cudart.cudaGraphicsGLRegisterBuffer(pbo_cpu.get_id(), cudart.cudaGraphicsRegisterFlags.cudaGraphicsRegisterFlagsNone)
-            # (err,) = cudart.cudaGraphicsMapResources(1, gl_resource, 0)
-            # (err, dev_ptr, dev_buff_size) = cudart.cudaGraphicsResourceGetMappedPointer(gl_resource)
-            # desc = assets.textures["cpu"].desc
-            # # For some reason, shape has to be (height, width, channels) and not (w, h, c). Otherwise 
-            # shape, strides, dtype = nbcuda.api.prepare_shape_strides_dtype(
-            #     shape=(desc.height, desc.width, desc.num_channels()), strides=None, dtype=desc.dtype(), order="C")
-            # mem_ptr = nbcuda.driver.MemoryPointer(context=nbcuda.current_context(), pointer=ctypes.c_uint64(dev_ptr), size=dev_buff_size)
-            # dev_nd_array = nbcuda.cudadrv.devicearray.DeviceNDArray(shape, strides, dtype, gpu_data=mem_ptr)
 
             threadsperblock = (16, 16)
             blockspergrid_x = math.ceil(dev_arr_world_pos.shape[0] / threadsperblock[0])
             blockspergrid_y = math.ceil(dev_arr_world_pos.shape[1] / threadsperblock[1])
             blockspergrid = (blockspergrid_x, blockspergrid_y)
             light_pos = np.array([0, 5, 0], dtype=np.float32)
-            process_texture[blockspergrid, threadsperblock](dev_arr_world_pos, dev_arr_world_normal, dev_arr_cpu, light_pos)     
+            dev_light_pos = nbcuda.to_device(light_pos)
+            process_texture[blockspergrid, threadsperblock](dev_arr_world_pos, dev_arr_world_normal, dev_arr_cpu, dev_light_pos)     
 
             cuda_world_pos.unmap()
             cuda_world_normal.unmap()
             cuda_cpu.unmap()
             pbo_cpu.write_tex(assets.textures["cpu"])
-            # (err,) = cudart.cudaGraphicsUnmapResources(1, gl_resource, 0)
-            # (err,) = cudart.cudaGraphicsUnregisterResource(gl_resource)
         fb_gbuffer.unbind()
-
 
         fb_viewport.bind()
         glClearColor(scene.clear_color.r, scene.clear_color.g, scene.clear_color.b, 1)
